@@ -10,6 +10,10 @@ class WorkflowState(Enum):
     VALIDATING = "VALIDATING"
     VERIFIED = "VERIFIED"
     REJECTED = "REJECTED"
+    # Review mode only: the required number of reports has been submitted. This
+    # records that the REVIEW is complete. It is never a statement that the
+    # project is ready, approved or verified. Not terminal: NEW_VERSION leaves it.
+    REVIEWED = "REVIEWED"
 
 
 class WorkflowEvent(Enum):
@@ -25,6 +29,10 @@ class WorkflowEvent(Enum):
     REASSIGN_REVIEWER = "REASSIGN_REVIEWER"  # owner swaps a reviewer who has not voted
     WITHDRAW = "WITHDRAW"                    # owner withdraws a submission to change evidence
     RESTART = "RESTART"
+    # Review mode only (see services/automata_engine.py, MODE_EVENTS).
+    SUBMIT_REPORT = "SUBMIT_REPORT"          # one reviewer's structured report (self-loop)
+    COMPLETE_REVIEW = "COMPLETE_REVIEW"      # fired by the engine when enough reports exist
+    NEW_VERSION = "NEW_VERSION"              # owner opens the next version after a review
 
 
 class Actor(Enum):

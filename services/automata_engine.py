@@ -33,7 +33,10 @@ from automata.states import Actor, WorkflowEvent, WorkflowState
 from automata.transitions import REQUIRED_ACTOR, get_allowed_events
 from automata.verification_machine import VerificationMachine
 from database.db import get_db_connection, transaction
-from services.integrity import GENESIS_HASH, compute_hash, evidence_digest, verify_chain
+from services.integrity import (GENESIS_HASH, REVIEW_ONLY_EVENTS, VERIFICATION_ONLY_EVENTS,
+                                compute_hash, evidence_digest, report_digest, verify_chain,
+                                version_digest)
+from services.report_service import ReportInvalid, validate_report
 
 MIN_REASON_LENGTH = 5
 MAX_NOTE = 2000
@@ -256,6 +259,15 @@ class AutomataEngine:
                 f"Events accepted here: {allowed}.",
             )
 
+        # 2b. mode guard: some events exist only for one kind of request
+        mode = workflow["review_mode"]
+        if (mode == "review" and event in VERIFICATION_ONLY_EVENTS) or \
+                (mode != "review" and event in REVIEW_ONLY_EVENTS):
+            raise TransitionBlocked(
+                "INVALID_TRANSITION",
+                f"{event.value} is not available for a "
+                f"{'review' if mode == 'review' else 'verification'} request.")
+
         # 3. is this actor allowed to fire it? (role read from the DB, never trusted from the client)
         actor = conn.execute("SELECT id, role FROM users WHERE id = ?", (actor_id,)).fetchone()
         if actor is None:
@@ -271,12 +283,17 @@ class AutomataEngine:
             digest = self._guard_vote(conn, workflow, actor, reason, extra)
         elif event == WorkflowEvent.REASSIGN_REVIEWER:
             meta, reason = self._guard_reassign(conn, workflow, assigned, reason, extra)
+        elif event == WorkflowEvent.SUBMIT_REPORT:
+            meta, reason = self._guard_report(conn, workflow, actor, extra)
 
         step = self._append(conn, workflow, event, actor, reason, digest, meta, extra)
 
         # Quorum: a vote may decide the outcome. Resolve in the same transaction.
         if event in VOTES:
             self._resolve_if_decided(conn, workflow_id, actor)
+            step["to_state"] = self._peek_state(conn, workflow_id)
+        elif event == WorkflowEvent.SUBMIT_REPORT:
+            self._complete_if_enough_reports(conn, workflow_id, actor)
             step["to_state"] = self._peek_state(conn, workflow_id)
         return step
 
@@ -291,9 +308,35 @@ class AutomataEngine:
             (workflow["id"], workflow["round"]),
         ).fetchall()
 
+    @staticmethod
+    def _version_row(conn, workflow):
+        return conn.execute(
+            "SELECT * FROM submission_versions WHERE workflow_id = ? AND round = ?",
+            (workflow["id"], workflow["round"])).fetchone()
+
+    @staticmethod
+    def _version_digest_of(version):
+        return version_digest(version["project_id"], version["repo_url"], version["commit_sha"],
+                              version["demo_url"], version["tech_stack"], version["review_goal"],
+                              version["questions"])
+
     def _guard_submit(self, conn, workflow, assigned, reason):
+        review = workflow["review_mode"] == "review"
         evidence = self._round_evidence(conn, workflow)
-        if not evidence:
+        version = None
+        if review:
+            version = self._version_row(conn, workflow)
+            if version is None or not (version["repo_url"] and version["commit_sha"]
+                                       and version["tech_stack"]):
+                raise TransitionBlocked(
+                    "GUARD_FAILED",
+                    "Describe this version (repository, commit, tech stack, review goal) "
+                    "before submitting it for review.")
+            owns = conn.execute("SELECT 1 FROM projects WHERE id = ? AND user_id = ?",
+                                (version["project_id"], workflow["user_id"])).fetchone()
+            if owns is None:
+                raise TransitionBlocked("GUARD_FAILED", "The version must belong to one of your projects.")
+        elif not evidence:
             raise TransitionBlocked(
                 "GUARD_FAILED", "Add at least one piece of evidence before submitting for review."
             )
@@ -301,18 +344,56 @@ class AutomataEngine:
         if not assigned or not (1 <= required <= len(assigned)):
             raise TransitionBlocked(
                 "GUARD_FAILED",
-                "Choose the reviewers who should verify this evidence, and how many must "
-                "approve, before submitting.",
+                "Choose the reviewers who should " + ("review" if review else "verify") +
+                " this " + ("version" if review else "evidence") + ", and how many must " +
+                ("report" if review else "approve") + ", before submitting.",
             )
+        if workflow["user_id"] in assigned:
+            raise TransitionBlocked("GUARD_FAILED", "You cannot review your own work.")
         names = [r["username"] for r in conn.execute(
             f"SELECT username FROM users WHERE id IN ({','.join('?' * len(assigned))}) "
             "ORDER BY username", assigned)]
-        # The reviewer policy is sealed into the tamper-evident history.
-        meta = json.dumps({"reviewers": assigned, "required": required},
-                          sort_keys=True, separators=(",", ":"))
-        reason = (f"Sent to {', '.join(names)}; {required} of {len(assigned)} approval"
-                  f"{'' if required == 1 else 's'} required" + (f". {reason}" if reason else ""))
+        policy = {"reviewers": assigned, "required": required}
+        if review:
+            policy.update({"mode": "review", "goal": version["review_goal"],
+                           "version_digest": self._version_digest_of(version)})
+            noun = "report" if required == 1 else "reports"
+            reason = (f"Version submitted to {', '.join(names)}; {required} of {len(assigned)} "
+                      f"{noun} required" + (f". {reason}" if reason else ""))
+        else:
+            reason = (f"Sent to {', '.join(names)}; {required} of {len(assigned)} approval"
+                      f"{'' if required == 1 else 's'} required" + (f". {reason}" if reason else ""))
+        # The reviewer policy (and, for review requests, the version) is sealed into the history.
+        meta = json.dumps(policy, sort_keys=True, separators=(",", ":"))
         return evidence_digest(evidence), meta, reason
+
+    def _guard_report(self, conn, workflow, actor, extra):
+        """Validate one reviewer's report. Consent is checked first; on any failure nothing is stored."""
+        sealed = conn.execute(
+            "SELECT meta FROM state_transitions WHERE workflow_id = ? AND event = 'SUBMIT_EVIDENCE' "
+            "ORDER BY seq DESC LIMIT 1", (workflow["id"],)).fetchone()
+        policy = json.loads(sealed["meta"]) if sealed and sealed["meta"] else {}
+        goal = policy.get("goal")
+        try:
+            data = validate_report(conn, workflow, goal if goal in ("production", "interview") else "production",
+                                   extra)
+        except ReportInvalid as exc:
+            raise TransitionBlocked("GUARD_FAILED", " ".join(exc.problems)) from None
+        if conn.execute("SELECT 1 FROM review_reports WHERE workflow_id = ? AND round = ? "
+                        "AND reviewer_id = ?", (workflow["id"], workflow["round"], actor["id"])).fetchone():
+            raise TransitionBlocked("GUARD_FAILED", "You have already submitted a report for this version.")
+        version = self._version_row(conn, workflow)
+        if version is None or self._version_digest_of(version) != policy.get("version_digest"):
+            raise TransitionBlocked("EVIDENCE_CHANGED",
+                                    "The version no longer matches what was submitted for review.")
+        from services.report_service import CONSENT_VERSION
+        digest = report_digest(workflow["round"], actor["id"], goal, CONSENT_VERSION,
+                               data["report"], data["findings"])
+        extra["_report"] = {**data, "digest": digest, "goal": goal}
+        meta = json.dumps({"report_digest": digest, "consent_version": CONSENT_VERSION,
+                           "findings": len(data["findings"])}, sort_keys=True, separators=(",", ":"))
+        n = len(data["findings"])
+        return meta, f"Report submitted with {n} finding{'' if n == 1 else 's'}."
 
     def _guard_vote(self, conn, workflow, actor, reason, extra):
         if not reason or len(reason) < MIN_REASON_LENGTH:
@@ -351,6 +432,11 @@ class AutomataEngine:
             raise TransitionBlocked(
                 "GUARD_FAILED", "A reviewer who has already decided cannot be replaced: "
                 "their decision stays part of the record.")
+        if conn.execute("SELECT 1 FROM review_reports WHERE workflow_id = ? AND round = ? "
+                        "AND reviewer_id = ?", (workflow["id"], workflow["round"], old["id"])).fetchone():
+            raise TransitionBlocked(
+                "GUARD_FAILED", "A reviewer who has already submitted a report cannot be replaced: "
+                "their report stays part of the record.")
         if new is None:
             raise TransitionBlocked("GUARD_FAILED", "No reviewer account matches the replacement.")
         if new["id"] == workflow["user_id"]:
@@ -413,6 +499,21 @@ class AutomataEngine:
                          f"Approval no longer possible: {rejections} of {total} reviewers rejected "
                          f"({required} approvals were required).", None, None, {})
 
+    def _complete_if_enough_reports(self, conn, workflow_id, actor):
+        """Quorum of REPORTS, not approval: it records that the review is complete and
+        says nothing about whether the project is ready."""
+        workflow = conn.execute("SELECT * FROM workflow_instances WHERE id = ?",
+                                (workflow_id,)).fetchone()
+        reports = conn.execute("SELECT COUNT(*) FROM review_reports WHERE workflow_id = ? AND round = ?",
+                               (workflow_id, workflow["round"])).fetchone()[0]
+        total = len(self.active_reviewers(conn, workflow_id, workflow["round"]))
+        required = workflow["required_approvals"]
+        if reports >= required:
+            self._append(conn, workflow, WorkflowEvent.COMPLETE_REVIEW, actor,
+                         f"Review complete: {reports} of {total} reports submitted "
+                         f"({required} required). This is not a readiness verdict.",
+                         None, None, {})
+
     # ----------------------------------------------------------------- append
     def _append(self, conn, workflow, event, actor, reason, digest, meta, extra):
         """Write one transition: history row, state update (compare-and-swap), side effects."""
@@ -452,7 +553,7 @@ class AutomataEngine:
 
         new_state = step["to_state"]
         is_decision = event in (WorkflowEvent.APPROVE, WorkflowEvent.REJECT)
-        new_round = event in (WorkflowEvent.RESTART, WorkflowEvent.WITHDRAW)
+        new_round = event in (WorkflowEvent.RESTART, WorkflowEvent.WITHDRAW, WorkflowEvent.NEW_VERSION)
         cursor = conn.execute(
             """
             UPDATE workflow_instances
@@ -488,6 +589,19 @@ class AutomataEngine:
 
     # ----------------------------------------------------------- side effects
     @staticmethod
+    def _carry_version_forward(conn, wid, round_no):
+        """The next round starts from an editable copy of the previous version's description."""
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO submission_versions
+                (workflow_id, round, project_id, review_goal, repo_url, commit_sha, demo_url,
+                 tech_stack, questions)
+            SELECT workflow_id, round + 1, project_id, review_goal, repo_url, commit_sha, demo_url,
+                   tech_stack, questions
+            FROM submission_versions WHERE workflow_id = ? AND round = ?
+            """, (wid, round_no))
+
+    @staticmethod
     def _side_effects(conn, workflow, event, actor, reason, digest, meta, extra):
         wid, round_no = workflow["id"], workflow["round"]
 
@@ -495,6 +609,45 @@ class AutomataEngine:
             conn.execute(
                 "UPDATE evidence SET verification_status = 'submitted' "
                 "WHERE workflow_id = ? AND round = ?", (wid, round_no))
+            if workflow["review_mode"] == "review":
+                conn.execute("UPDATE submission_versions SET locked_at = ? "
+                             "WHERE workflow_id = ? AND round = ?", (_now(), wid, round_no))
+
+        elif event == WorkflowEvent.SUBMIT_REPORT:
+            rep = extra["_report"]
+            cursor = conn.execute(
+                """
+                INSERT INTO review_reports
+                    (workflow_id, round, reviewer_id, review_goal, summary, strengths, unresolved,
+                     assessed, not_assessed, interview_qs, private_notes, consent_ack_at,
+                     consent_version, content_digest, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (wid, round_no, actor["id"], rep["goal"], rep["report"]["summary"],
+                 rep["report"]["strengths"], rep["report"]["unresolved"], rep["report"]["assessed"],
+                 rep["report"]["not_assessed"], rep["report"]["interview_qs"], rep["private_notes"],
+                 _now(), json.loads(meta)["consent_version"], rep["digest"], _now()))
+            for f in rep["findings"]:
+                conn.execute(
+                    """
+                    INSERT INTO review_findings
+                        (report_id, seq, severity, category, title, explanation, suggested_fix,
+                         reasoning, file_path, commit_ref, repro_evidence, prior_finding_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (cursor.lastrowid, f["seq"], f["severity"], f["category"], f["title"],
+                     f["explanation"], f["suggested_fix"], f["reasoning"], f["file_path"],
+                     f["commit_ref"], f["repro_evidence"], f["prior_finding_id"]))
+
+        elif event == WorkflowEvent.NEW_VERSION:
+            conn.execute(
+                "INSERT OR IGNORE INTO review_assignments (workflow_id, round, reviewer_id) "
+                "SELECT workflow_id, round + 1, reviewer_id FROM review_assignments "
+                "WHERE workflow_id = ? AND round = ? AND status = 'assigned'", (wid, round_no))
+            AutomataEngine._carry_version_forward(conn, wid, round_no)
+
+        elif event == WorkflowEvent.COMPLETE_REVIEW:
+            pass      # the state change IS the effect; the task is never marked completed
 
         elif event in VOTES:
             decision = "approve" if event == WorkflowEvent.VOTE_APPROVE else "reject"
@@ -561,6 +714,8 @@ class AutomataEngine:
                 conn.execute(
                     "UPDATE evidence SET verification_status = 'withdrawn' "
                     "WHERE workflow_id = ? AND round = ?", (wid, round_no))
+                if workflow["review_mode"] == "review":
+                    AutomataEngine._carry_version_forward(conn, wid, round_no)
                 conn.execute(
                     """
                     INSERT INTO evidence

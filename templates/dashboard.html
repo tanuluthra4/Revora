@@ -11,12 +11,14 @@
         {% if current_user['role'] == 'reviewer' %}
         <a href="{{ url_for('tasks.review_queue') }}" class="btn btn-ghost">Review queue{% if pending_reviews %} ({{ pending_reviews }}){% endif %}</a>
         {% endif %}
-        <a href="{{ url_for('tasks.add_task') }}" class="btn btn-primary">+ New task</a>
+        <a href="{{ url_for('reviews.new_request') }}" class="btn btn-primary">+ Request a review</a>
+        <a href="{{ url_for('tasks.add_task') }}" class="btn btn-ghost">+ New task</a>
     </div>
 </div>
 
 <section class="stats" aria-label="Verification summary">
     <div class="stat good"><b>{{ counts.verified }}</b><span>Verified proofs</span></div>
+    <div class="stat"><b>{{ counts.reviewed }}</b><span>Reviews complete</span></div>
     <div class="stat"><b>{{ counts.in_review }}</b><span>In review</span></div>
     <div class="stat"><b>{{ counts.needs_action }}</b><span>Need your action</span></div>
     <div class="stat"><b>{{ counts.rejected }}</b><span>Rejected</span></div>

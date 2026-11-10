@@ -204,7 +204,7 @@
             <h2 id="share-h">Share this verified proof</h2>
             {% if share_url %}
             <p class="small muted" style="margin-bottom:8px">Anyone with this link can view this proof (title, evidence, reviewer usernames and decisions, public notes and integrity check). Put it on your resume or LinkedIn.</p>
-            <input type="text" readonly value="{{ share_url }}" onclick="this.select()" aria-label="Public proof link">
+            <input type="text" readonly value="{{ share_url }}" data-select-on-focus aria-label="Public proof link">
             {{ post_button(url_for('tasks.unshare_task', task_id=task['id']), 'Revoke link', 'btn btn-danger btn-sm', confirm='Revoke this link? It stops working immediately.') }}
             {% else %}
             {% if share_revoked %}<div class="notice warn small" style="margin-bottom:8px">The previous link was revoked and no longer works. Creating a link issues a new one.</div>{% endif %}

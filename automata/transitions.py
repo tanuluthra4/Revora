@@ -5,8 +5,9 @@ truth for which moves are legal. The engine, routes, templates and the
 state-diagram visualisation all read from `TRANSITIONS`.
 
 Formally the machine is a deterministic finite automaton M = (Q, Sigma, delta, q0, F):
-    Q      = the seven WorkflowState values
-    Sigma  = the eleven WorkflowEvent values (two are reviewer votes)
+    Q      = the eight WorkflowState values
+    Sigma  = the fourteen WorkflowEvent values (two are reviewer votes, three exist
+             only for review-mode requests)
     delta  = TRANSITIONS (a *partial* function: undefined moves are rejected)
     q0     = CREATED
     F      = {VERIFIED}   (accepting state: the proof was approved)
@@ -41,6 +42,14 @@ TRANSITIONS = {
         WorkflowEvent.WITHDRAW: WorkflowState.IN_PROGRESS,
         WorkflowEvent.APPROVE: WorkflowState.VERIFIED,
         WorkflowEvent.REJECT: WorkflowState.REJECTED,
+        # Review mode: each report is a chained self-loop; the engine fires
+        # COMPLETE_REVIEW when the k-th report arrives.
+        WorkflowEvent.SUBMIT_REPORT: WorkflowState.VALIDATING,
+        WorkflowEvent.COMPLETE_REVIEW: WorkflowState.REVIEWED,
+    },
+    # REVIEWED is not terminal, but only the owner's NEW_VERSION leaves it.
+    WorkflowState.REVIEWED: {
+        WorkflowEvent.NEW_VERSION: WorkflowState.IN_PROGRESS,
     },
     # VERIFIED is terminal: a verified proof can never be silently re-opened.
     WorkflowState.REJECTED: {
@@ -64,6 +73,9 @@ REQUIRED_ACTOR = {
     WorkflowEvent.REASSIGN_REVIEWER: Actor.OWNER,
     WorkflowEvent.WITHDRAW: Actor.OWNER,
     WorkflowEvent.RESTART: Actor.OWNER,
+    WorkflowEvent.SUBMIT_REPORT: Actor.REVIEWER,
+    WorkflowEvent.COMPLETE_REVIEW: Actor.SYSTEM,
+    WorkflowEvent.NEW_VERSION: Actor.OWNER,
 }
 
 

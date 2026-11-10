@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, state_pill, post_button %}
+{% from '_report.html' import report_body, finding_head %}
+{% set labels = {'START': 'Start preparing this version', 'REQUEST_EVIDENCE': 'Next: choose reviewers', 'SUBMIT_EVIDENCE': 'Submit this version for review', 'START_VALIDATION': 'Begin review', 'NEW_VERSION': 'Start a new version'} %}
+{% block title %}{{ task['title'] }}{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>{{ task['title'] }} {{ state_pill(task['current_state'], state_label) }}</h1>
+        <div class="kv">
+            <span>Author: <b>{{ task['owner_name'] }}</b></span>
+            <span>Project: <b>{{ task['project_title'] }}</b></span>
+            {% if version %}<span>Goal: <b>{{ goal_labels[version['review_goal']] }}</b></span>{% endif %}
+            <span>Version: <b>{{ task['round'] }}</b></span>
+            <span>Reports required: <b>{% if assigned %}{{ task['required_approvals'] }} of {{ assigned|length }} reviewers{% else %}not set yet{% endif %}</b></span>
+        </div>
+    </div>
+    <div class="actions-row">
+        {% if is_owner %}{{ post_button(url_for('tasks.delete_task', task_id=task['id']), 'Delete', 'btn btn-danger btn-sm', confirm='Delete this request? Requests that already have reports cannot be deleted.') }}{% endif %}
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('main.dashboard') if is_owner else url_for('tasks.review_queue') }}">&larr; Back</a>
+    </div>
+</div>
+
+<section class="card" aria-labelledby="fsm-h">
+    <h2 id="fsm-h">Workflow <span class="muted small">&mdash; drawn from the live transition table and this request&rsquo;s stored history</span></h2>
+    {% include '_fsm.html' %}
+</section>
+
+<div class="grid-2" style="margin-top:18px">
+<div class="stack">
+
+    <section class="card" aria-labelledby="act-h">
+        <h2 id="act-h">What happens next</h2>
+        {% if state.value == 'REVIEWED' %}
+            <div class="notice good"><b>Review complete.</b> The required number of reports has been submitted. This records that the review is finished; it does <b>not</b> mean the project is ready, approved or verified. Read every finding, including unresolved ones.</div>
+        {% elif is_owner and state.value == 'CREATED' %}<p class="muted small">Start preparing when you are ready to describe and submit this version.</p>
+        {% elif is_owner and state.value == 'IN_PROGRESS' %}<p class="muted small">Check the version details, then continue to choose reviewers.</p>
+        {% elif is_owner and state.value == 'EVIDENCE_REQUIRED' %}<p class="muted small">Choose reviewers from the directory and how many reports you need, then submit. A submitted version is locked; to change it you must withdraw it.</p>
+        {% elif is_owner and state.value in ('EVIDENCE_SUBMITTED', 'VALIDATING') %}<div class="notice">{{ reports|selectattr('round', 'equalto', task['round'])|list|length }} of {{ task['required_approvals'] }} required reports submitted. The version is locked while it is under review.</div>
+        {% elif is_reviewer and state.value == 'EVIDENCE_SUBMITTED' %}<p class="muted small">Open the review when you are ready to write your report.</p>
+        {% elif is_reviewer and state.value == 'VALIDATING' and my_report %}<div class="notice good">You have submitted your report. It cannot be changed.</div>
+        {% endif %}
+        {% if actions %}<div class="action-list" style="margin-top:8px">
+            {% for event in actions %}{{ post_button(url_for('tasks.fire_event', task_id=task['id'], event_name=event.value), labels.get(event.value, event_labels[event]), 'btn btn-primary') }}{% endfor %}
+        </div>{% endif %}
+        {% if can_withdraw %}<div style="margin-top:12px">
+            {{ post_button(url_for('tasks.fire_event', task_id=task['id'], event_name='WITHDRAW'), 'Withdraw this version to change it', 'btn btn-ghost btn-sm', confirm='Withdraw this version? Reports already written stay in the record but no longer count; a new version starts.') }}</div>{% endif %}
+        {% if can_reassign %}
+        <details style="margin-top:12px"><summary>Replace a reviewer who has not reported</summary>
+            <form method="post" action="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='REASSIGN_REVIEWER') }}" class="inline-form">
+                {{ csrf() }}
+                <label for="remove" class="small">Replace username</label><input id="remove" name="remove" required>
+                <label for="add" class="small">With username</label><input id="add" name="add" required>
+                <button class="btn btn-ghost btn-sm" type="submit">Replace</button></form></details>
+        {% endif %}
+    </section>
+
+    {% if version %}
+    <section class="card" aria-labelledby="ver-h">
+        <h2 id="ver-h">Version {{ version['round'] }} {% if version['locked_at'] %}<span class="pill">locked {{ version['locked_at'] }} UTC</span>{% else %}<span class="pill">draft</span>{% endif %}</h2>
+        {% if can_edit_version %}
+        <form method="post" action="{{ url_for('reviews.edit_version', task_id=task['id']) }}">
+            {{ csrf() }}
+            <fieldset><legend>Review goal</legend>
+                {% for key, label in goal_labels.items() %}<label class="radio-row"><input type="radio" name="review_goal" value="{{ key }}" {{ 'checked' if version['review_goal'] == key }}><span>{{ label }}</span></label>{% endfor %}
+            </fieldset>
+            <label for="repo_url">Repository address</label><input id="repo_url" name="repo_url" type="url" required maxlength="300" value="{{ version['repo_url'] }}">
+            <label for="commit_sha">Commit SHA</label><input id="commit_sha" name="commit_sha" required maxlength="40" value="{{ version['commit_sha'] }}">
+            <label for="demo_url">Demo address (optional)</label><input id="demo_url" name="demo_url" type="url" maxlength="300" value="{{ version['demo_url'] or '' }}">
+            <label for="tech_stack">Tech stack</label><input id="tech_stack" name="tech_stack" required maxlength="300" value="{{ version['tech_stack'] }}">
+            <label for="questions">What should reviewers look at?</label><textarea id="questions" name="questions" maxlength="2000">{{ version['questions'] or '' }}</textarea>
+            <button class="btn-primary" type="submit">Save version</button>
+        </form>
+        {% else %}
+        <div class="kv"><span>Commit: <b class="mono">{{ version['commit_sha'] }}</b></span><span>Stack: <b>{{ version['tech_stack'] }}</b></span></div>
+        <p class="small">Repository: <a href="{{ version['repo_url'] }}" target="_blank" rel="noopener noreferrer nofollow">{{ version['repo_url'] }}</a></p>
+        {% if version['demo_url'] %}<p class="small">Demo: <a href="{{ version['demo_url'] }}" target="_blank" rel="noopener noreferrer nofollow">{{ version['demo_url'] }}</a></p>{% endif %}
+        {% if version['questions'] %}<p class="small"><b>Author&rsquo;s questions:</b> <span class="prewrap">{{ version['questions'] }}</span></p>{% endif %}
+        {% endif %}
+        {% if is_reviewer %}<p class="hint">Revisely does not fetch or run this repository. Open it yourself, and treat its contents as untrusted. You can only report on what you actually looked at; say what you did not assess.</p>{% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="rv-h">
+        <h2 id="rv-h">Reviewers for this version</h2>
+        {% if assigned %}<ul class="panel-list">{% for a in assigned %}<li><b>{{ a['username'] }}</b> {% if a['reported'] %}<span class="pill ok">report submitted</span>{% else %}<span class="pill">no report yet</span>{% endif %}</li>{% endfor %}</ul>
+        {% else %}<p class="muted">No reviewers chosen yet.</p>{% endif %}
+        {% if can_choose %}<a class="btn btn-primary btn-sm" style="margin-top:10px" href="{{ url_for('reviewers.picker', task_id=task['id']) }}">Choose reviewers</a>{% endif %}
+        <p class="hint">Reviewers are separate accounts with self-reported backgrounds. Separate accounts do not prove independence, and Revisely cannot detect one person using several accounts.</p>
+    </section>
+    {% endif %}
+
+    {% if can_report %}
+    <section class="card" aria-labelledby="rf-h">
+        <h2 id="rf-h">Write your report</h2>
+        <p class="muted small">Plain text only. Say what you assessed and what you did not. Findings are optional but should be specific and fixable.</p>
+        <form method="post" action="{{ url_for('reviews.submit_report', task_id=task['id']) }}">
+            {{ csrf() }}
+            <label for="summary">Summary</label><textarea id="summary" name="summary" required maxlength="3000"></textarea>
+            <label for="strengths">Strengths</label><textarea id="strengths" name="strengths" required maxlength="3000"></textarea>
+            <label for="unresolved">Unresolved concerns (optional)</label><textarea id="unresolved" name="unresolved" maxlength="3000"></textarea>
+            <label for="assessed">What you assessed</label><textarea id="assessed" name="assessed" required maxlength="2000"></textarea>
+            <label for="not_assessed">What you did NOT assess</label><textarea id="not_assessed" name="not_assessed" required maxlength="2000"></textarea>
+            {% if version and version['review_goal'] == 'interview' %}<label for="interview_qs">Interview questions the author should prepare for</label><textarea id="interview_qs" name="interview_qs" maxlength="3000"></textarea>{% endif %}
+            <label for="private_notes">Private notes (only you can read these; never published)</label><textarea id="private_notes" name="private_notes" maxlength="3000"></textarea>
+
+            <h3>Findings</h3>
+            {% for i in slots %}
+            <details class="finding-slot" {{ 'open' if i == 1 }}><summary>Finding {{ i }}</summary>
+                <label for="f{{ i }}_severity">Severity</label>
+                <select id="f{{ i }}_severity" name="f{{ i }}_severity"><option value="">(none)</option>{% for s in severities %}<option value="{{ s }}">{{ s|capitalize }}</option>{% endfor %}</select>
+                <label for="f{{ i }}_category">Category</label>
+                <select id="f{{ i }}_category" name="f{{ i }}_category"><option value="">(none)</option>{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select>
+                <label for="f{{ i }}_title">Title</label><input id="f{{ i }}_title" name="f{{ i }}_title" maxlength="200">
+                <label for="f{{ i }}_explanation">What is wrong</label><textarea id="f{{ i }}_explanation" name="f{{ i }}_explanation" maxlength="3000"></textarea>
+                <label for="f{{ i }}_suggested_fix">Suggested fix</label><textarea id="f{{ i }}_suggested_fix" name="f{{ i }}_suggested_fix" maxlength="3000"></textarea>
+                <label for="f{{ i }}_reasoning">Reasoning (optional)</label><textarea id="f{{ i }}_reasoning" name="f{{ i }}_reasoning" maxlength="2000"></textarea>
+                <label for="f{{ i }}_file_path">File (optional)</label><input id="f{{ i }}_file_path" name="f{{ i }}_file_path" maxlength="300">
+                <label for="f{{ i }}_commit_ref">Commit (optional)</label><input id="f{{ i }}_commit_ref" name="f{{ i }}_commit_ref" maxlength="40">
+                <label for="f{{ i }}_repro_evidence">How to reproduce (optional)</label><textarea id="f{{ i }}_repro_evidence" name="f{{ i }}_repro_evidence" maxlength="2000"></textarea>
+                {% if prior %}<label for="f{{ i }}_prior_finding_id">Follow-up to an earlier finding of yours (optional)</label>
+                <select id="f{{ i }}_prior_finding_id" name="f{{ i }}_prior_finding_id"><option value="">(none)</option>{% for p in prior %}<option value="{{ p['id'] }}">v{{ p['round'] }}: {{ p['title'] }}</option>{% endfor %}</select>{% endif %}
+            </details>
+            {% endfor %}
+
+            <div class="consent-box">
+                <label class="check-row"><input type="checkbox" name="consent_ack" value="1" required>
+                    <span><b>Disclosure.</b> {{ consent_text }}</span></label>
+                <input type="hidden" name="consent_version" value="{{ consent_version }}">
+            </div>
+            <p class="hint">You cannot submit without ticking the box above. Your report cannot be edited afterwards.</p>
+            <button class="btn-primary" type="submit">Submit report</button>
+        </form>
+    </section>
+    {% endif %}
+
+    {% if reports %}
+    <section class="card" aria-labelledby="rp-h">
+        <h2 id="rp-h">{{ 'Reports' if is_owner else 'Your reports' }}</h2>
+        {% for r in reports %}
+        <article class="report-block" style="margin-top:14px">
+            <h3>Version {{ r['round'] }} &middot; {{ r['username'] }} <span class="muted small">{{ r['created_at'] }} UTC</span></h3>
+            <p class="muted small">Community reviewer &middot; background self-reported, not verified</p>
+            {{ report_body(r) }}
+            {% if r['private_notes'] %}<h4>Your private notes</h4><p class="prewrap">{{ r['private_notes'] }}</p>{% endif %}
+            {% for f in r['findings'] %}
+            <div class="finding">
+                {{ finding_head(f) }}
+                {% if f['updates'] %}<ul class="small">{% for u in f['updates'] %}<li>{{ u['created_at'] }} UTC &middot; {{ u['actor_name'] }} ({{ u['actor_role'] }}): {{ status_labels[u['to_status']] }} &mdash; {{ u['note'] }}{% if u['commit_ref'] %} (commit <span class="mono">{{ u['commit_ref'] }}</span>){% endif %}</li>{% endfor %}</ul>{% endif %}
+                {% if f['next'] %}
+                <form method="post" action="{{ url_for('reviews.update_finding', finding_id=f['id']) }}" class="inline-form">
+                    {{ csrf() }}
+                    <label class="small" for="st{{ f['id'] }}">Change status</label>
+                    <select id="st{{ f['id'] }}" name="to_status">{% for s in f['next'] %}<option value="{{ s }}">{{ status_labels[s] }}</option>{% endfor %}</select>
+                    <label class="small" for="nt{{ f['id'] }}">Note</label><input id="nt{{ f['id'] }}" name="note" required maxlength="1000">
+                    <label class="small" for="cm{{ f['id'] }}">Commit (optional)</label><input id="cm{{ f['id'] }}" name="commit_ref" maxlength="40">
+                    <button class="btn btn-ghost btn-sm" type="submit">Update</button>
+                </form>{% endif %}
+            </div>
+            {% else %}<p class="muted">No findings in this report.</p>{% endfor %}
+        </article>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if is_owner and shares %}
+    <section class="card" aria-labelledby="sh-h">
+        <h2 id="sh-h">Sharing</h2>
+        <p class="muted small">Private by default. You can share one version at a time. A shared page shows the project title, repository address, commit, tech stack, every reviewer&rsquo;s non-private report text and <b>all</b> of their findings, including critical and unresolved ones. It never shows private notes, e-mail addresses, your questions or anything about your other projects. You can revoke a link at any time; sharing again creates a new link.</p>
+        {% for s in shares %}
+        <div class="finding"><b>Version {{ s['round'] }}</b> &middot; {{ s['reports'] }} report{{ '' if s['reports'] == 1 else 's' }}
+            {% if s['url'] %}
+                <div class="share-box">{{ s['url'] }}</div>
+                <form method="post" action="{{ url_for('reviews.unshare_report', task_id=task['id']) }}" class="inline">{{ csrf() }}<input type="hidden" name="round" value="{{ s['round'] }}"><button class="btn btn-danger btn-sm" type="submit">Revoke link</button></form>
+            {% elif s['can_share'] %}
+                {% if s['revoked'] %}<p class="small muted">The earlier link was revoked and shows nothing.</p>{% endif %}
+                <form method="post" action="{{ url_for('reviews.share_report', task_id=task['id']) }}">{{ csrf() }}<input type="hidden" name="round" value="{{ s['round'] }}"><button class="btn btn-ghost btn-sm" type="submit">Create public link for this version</button></form>
+            {% else %}<p class="small muted">Available once the review of this version is complete.</p>{% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+</div>
+
+<div class="stack">
+    <section class="card" aria-labelledby="hist-h">
+        <h2 id="hist-h">History</h2>
+        {% if chain.ok %}<div class="notice good"><b>Integrity verified.</b> {{ chain.length }} link{{ '' if chain.length == 1 else 's' }} replayed through the automaton; hashes, reports, consent records and finding histories all matched.</div>
+        {% else %}<div class="notice bad"><b>TAMPERING DETECTED{% if chain.error.seq %} at link #{{ chain.error.seq }}{% endif %}.</b> {{ chain.error.message }} <span class="mono">[{{ chain.error.code }}]</span></div>{% endif %}
+        <ol class="timeline" style="margin-top:12px">
+            {% for h in history|reverse %}
+            <li><span class="ev">#{{ h['seq'] }} {{ h['event'] }}</span> <span class="muted small">{{ h['from_state'] }} &rarr; {{ h['to_state'] }}</span>
+                <div class="muted small">{{ h['actor_name'] or h['actor_role'] }} &middot; {{ h['created_at'] }} UTC</div>
+                {% if h['reason'] %}<div class="reason">{{ h['reason'] }}</div>{% endif %}
+                <div class="hash">{{ h['hash'] }}</div></li>
+            {% endfor %}
+        </ol>
+        <p class="muted small">Tamper-<i>evident</i>, not tamper-proof.</p>
+    </section>
+    {% if is_owner and blocked %}
+    <section class="card"><h2>Blocked attempts</h2><ul class="blocked-list">
+        {% for b in blocked %}<li><b>{{ b['event'] }}</b> <span class="mono">[{{ b['code'] }}]</span> by {{ b['actor_name'] or 'unknown' }}<div class="muted small">{{ b['message'] }}</div></li>{% endfor %}
+    </ul></section>
+    {% endif %}
+    <section class="card"><p class="muted small">{{ disclaimer }}</p></section>
+</div>
+</div>
+{% endblock %}

@@ -32,25 +32,27 @@ def get_db_connection(path=None):
 
 @contextmanager
 def transaction(conn=None):
-    """Run a block inside BEGIN IMMEDIATE ... COMMIT, rolling back on any error.
-
-    BEGIN IMMEDIATE takes SQLite's write lock up front, so two concurrent
-    requests cannot both read the same workflow state and both advance it.
-    If `conn` is omitted a connection is opened (and closed) for the block.
-    """
+    """Run a block inside BEGIN IMMEDIATE ... COMMIT."""
     owns_connection = conn is None
     if owns_connection:
         conn = get_db_connection()
 
-    conn.execute("BEGIN IMMEDIATE")
+    transaction_started = False
+
     try:
+        conn.execute("BEGIN IMMEDIATE")
+        transaction_started = True
+
         yield conn
+
+        conn.execute("COMMIT")
+        transaction_started = False
+
     except BaseException:
-        if conn.in_transaction:
+        if transaction_started and conn.in_transaction:
             conn.execute("ROLLBACK")
         raise
-    else:
-        conn.execute("COMMIT")
+
     finally:
         if owns_connection:
             conn.close()

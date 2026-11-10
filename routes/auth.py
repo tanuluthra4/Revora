@@ -4,6 +4,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, s
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.db import get_db_connection, transaction
+from services import login_throttle
 from routes.helpers import start_session, valid_email, valid_username
 
 auth_bp = Blueprint("auth", __name__)
@@ -76,6 +77,11 @@ def login():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
+        client = request.remote_addr
+
+        if login_throttle.is_blocked(client, email):
+            error = "Too many failed sign-in attempts. Wait 15 minutes and try again."
+            return render_template("login.html", error=error, selected_role=selected_role), 429
 
         conn = get_db_connection()
         try:
@@ -93,9 +99,11 @@ def login():
                 else:
                     error = "This is a developer account. Please use the Developer login."
             else:
+                login_throttle.record_success(client, email)
                 start_session(user)
                 return redirect(_home_for(user["role"]))
         else:
+            login_throttle.record_failure(client, email)
             error = "Invalid email or password"
 
     return render_template("login.html", error=error, selected_role=selected_role)

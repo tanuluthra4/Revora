@@ -82,6 +82,35 @@ def evidence_digest(evidence_rows) -> str:
     return hashlib.sha256(encoded.encode("ascii")).hexdigest()
 
 
+def version_digest(project_id, repo_url, commit_sha, demo_url, tech_stack, review_goal, questions):
+    """Digest of one submitted project version (sealed into SUBMIT_EVIDENCE for review mode)."""
+    encoded = json.dumps([project_id, repo_url, commit_sha, demo_url, tech_stack,
+                          review_goal, questions], separators=(",", ":"), ensure_ascii=True)
+    return hashlib.sha256(encoded.encode("ascii")).hexdigest()
+
+
+REPORT_FIELDS = ("summary", "strengths", "unresolved", "assessed", "not_assessed", "interview_qs")
+FINDING_FIELDS = ("severity", "category", "title", "explanation", "suggested_fix", "reasoning",
+                  "file_path", "commit_ref", "repro_evidence", "prior_finding_id")
+
+
+def report_digest(round_no, reviewer_id, review_goal, consent_version, report, findings):
+    """Digest of everything in a report that can be shown publicly.
+
+    Private notes are deliberately excluded. `consent_version` IS included, so a
+    report whose disclosure acknowledgment was removed or changed no longer
+    matches the digest sealed in the audit chain.
+    """
+    payload = [
+        round_no, reviewer_id, review_goal, consent_version,
+        [report[f] for f in REPORT_FIELDS],
+        [[f_["seq"]] + [f_[k] for k in FINDING_FIELDS]
+         for f_ in sorted(findings, key=lambda f_: f_["seq"])],
+    ]
+    encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True)
+    return hashlib.sha256(encoded.encode("ascii")).hexdigest()
+
+
 def _load_meta(row):
     try:
         return json.loads(row["meta"]) if row["meta"] else None
@@ -139,6 +168,83 @@ def _check_review_rules(conn, row, event, workflow_id, evidence_round, policy,
     return None
 
 
+REVIEW_ONLY_EVENTS = frozenset({WorkflowEvent.SUBMIT_REPORT, WorkflowEvent.COMPLETE_REVIEW,
+                                WorkflowEvent.NEW_VERSION})
+VERIFICATION_ONLY_EVENTS = frozenset({WorkflowEvent.VOTE_APPROVE, WorkflowEvent.VOTE_REJECT,
+                                      WorkflowEvent.APPROVE, WorkflowEvent.REJECT,
+                                      WorkflowEvent.RESTART})
+
+
+def _check_mode_rules(conn, workflow, row, event, evidence_round, policy, chain_mode, reporters):
+    """Replay the review-mode rules for one link. Returns (code, message) or None.
+
+    The mode of a request is sealed in SUBMIT_EVIDENCE's meta (absent = the
+    original verification mode), so it cannot be flipped by editing a column.
+    """
+    seq = row["seq"]
+    if event in REVIEW_ONLY_EVENTS and chain_mode != "review":
+        return ("MODE_VIOLATION", f"Link #{seq} ({event.value}) exists only for review-mode requests.")
+    if event in VERIFICATION_ONLY_EVENTS and chain_mode == "review":
+        return ("MODE_VIOLATION", f"Link #{seq} ({event.value}) is not allowed in a review-mode request.")
+
+    if event == WorkflowEvent.SUBMIT_EVIDENCE and row["actor_role"] != "legacy":
+        meta = _load_meta(row) or {}
+        mode = meta.get("mode", "verification")
+        if mode not in ("verification", "review") or (chain_mode is not None and mode != chain_mode):
+            return ("MODE_VIOLATION", f"Link #{seq} changes the mode of the request.")
+        if mode == "review":
+            version = conn.execute(
+                "SELECT * FROM submission_versions WHERE workflow_id = ? AND round = ?",
+                (workflow["id"], evidence_round)).fetchone()
+            if version is None or version_digest(
+                    version["project_id"], version["repo_url"], version["commit_sha"],
+                    version["demo_url"], version["tech_stack"], version["review_goal"],
+                    version["questions"]) != meta.get("version_digest") \
+                    or version["review_goal"] != meta.get("goal"):
+                return ("VERSION_ALTERED",
+                        f"The version stored for link #{seq} no longer matches the digest sealed "
+                        "when it was submitted.")
+
+    if event == WorkflowEvent.REASSIGN_REVIEWER and policy is not None:
+        remove = (_load_meta(row) or {}).get("remove")
+        if remove in reporters:
+            return ("ILLEGAL_REASSIGNMENT", f"Link #{seq} replaces a reviewer who had already reported.")
+
+    if event == WorkflowEvent.SUBMIT_REPORT:
+        who = row["actor_id"]
+        if policy is None or who not in policy["reviewers"] or who == workflow["user_id"]:
+            return ("ILLEGAL_REPORT", f"Link #{seq} is a report by someone who was not an assigned "
+                                      "reviewer, or by the owner.")
+        if who in reporters:
+            return ("ILLEGAL_REPORT", f"Link #{seq} is a second report by the same reviewer.")
+        if len(reporters) >= policy["required"]:
+            return ("ILLEGAL_REPORT", f"Link #{seq} is a report submitted after the review was complete.")
+        meta = _load_meta(row) or {}
+        report = conn.execute(
+            "SELECT * FROM review_reports WHERE workflow_id = ? AND round = ? AND reviewer_id = ?",
+            (workflow["id"], evidence_round, who)).fetchone()
+        if report is None:
+            return ("REPORT_MISMATCH", f"Link #{seq} records a report that is not stored.")
+        if not report["consent_ack_at"] or not report["consent_version"] \
+                or report["consent_version"] != meta.get("consent_version"):
+            return ("CONSENT_MISSING", f"The report recorded at link #{seq} has no valid "
+                                       "disclosure acknowledgment.")
+        findings = [dict(f_) for f_ in conn.execute(
+            "SELECT * FROM review_findings WHERE report_id = ? ORDER BY seq", (report["id"],))]
+        recomputed = report_digest(evidence_round, who, report["review_goal"],
+                                   report["consent_version"], report, findings)
+        if recomputed != report["content_digest"] or recomputed != meta.get("report_digest") \
+                or report["review_goal"] != policy.get("goal"):
+            return ("REPORT_MISMATCH", f"The stored report for link #{seq} does not match the "
+                                       "digest sealed in the audit trail.")
+
+    if event == WorkflowEvent.COMPLETE_REVIEW and policy is not None \
+            and len(reporters) < policy["required"]:
+        return ("QUORUM_NOT_MET", f"Review marked complete with {len(reporters)} reports but "
+                                  f"{policy['required']} were required.")
+    return None
+
+
 def _result(ok, length, replayed_state=None, error=None, head=None):
     return {
         "ok": ok,
@@ -174,6 +280,9 @@ def verify_chain(conn, workflow_id) -> dict:
     submitted_digest = None
     approvals, rejections = set(), set()
     vote_events = 0
+    report_events = 0
+    chain_mode = None        # "verification" | "review", sealed by SUBMIT_EVIDENCE
+    reporters = set()
 
     for expected_seq, row in enumerate(rows, start=1):
         seq = row["seq"]
@@ -226,6 +335,11 @@ def verify_chain(conn, workflow_id) -> dict:
                             "the digest that was sealed when it was submitted.",
                             state.value)
 
+        problem = _check_mode_rules(conn, workflow, row, event, evidence_round,
+                                    policy, chain_mode, reporters)
+        if problem:
+            return fail(seq, problem[0], problem[1], state.value)
+
         problem = _check_review_rules(conn, row, event, workflow_id, evidence_round,
                                       policy, approvals, rejections, submitted_digest)
         if problem:
@@ -234,7 +348,9 @@ def verify_chain(conn, workflow_id) -> dict:
         if event == WorkflowEvent.SUBMIT_EVIDENCE:
             policy = _load_meta(row)
             submitted_digest = row["evidence_digest"]
-            approvals, rejections = set(), set()
+            approvals, rejections, reporters = set(), set(), set()
+            if row["actor_role"] != "legacy":
+                chain_mode = (policy or {}).get("mode", "verification")
         elif event == WorkflowEvent.REASSIGN_REVIEWER and policy is not None:
             meta = _load_meta(row)
             policy["reviewers"] = [meta["add"] if r == meta["remove"] else r
@@ -244,10 +360,14 @@ def verify_chain(conn, workflow_id) -> dict:
             if policy is not None:
                 (approvals if event == WorkflowEvent.VOTE_APPROVE else rejections).add(row["actor_id"])
 
-        if event in (WorkflowEvent.RESTART, WorkflowEvent.WITHDRAW):
+        elif event == WorkflowEvent.SUBMIT_REPORT:
+            report_events += 1
+            reporters.add(row["actor_id"])
+
+        if event in (WorkflowEvent.RESTART, WorkflowEvent.WITHDRAW, WorkflowEvent.NEW_VERSION):
             evidence_round += 1
             policy, submitted_digest = None, None
-            approvals, rejections = set(), set()
+            approvals, rejections, reporters = set(), set(), set()
 
         previous_hash = row["hash"]
         state = to_state
@@ -260,6 +380,25 @@ def verify_chain(conn, workflow_id) -> dict:
                     f"{stored_decisions} reviewer decisions are stored but the chain records "
                     f"{vote_events} votes: a decision was added or removed outside the chain.",
                     state.value)
+
+    stored_reports = conn.execute(
+        "SELECT COUNT(*) FROM review_reports WHERE workflow_id = ?", (workflow_id,)
+    ).fetchone()[0]
+    if stored_reports != report_events:
+        return fail(None, "REPORT_MISMATCH",
+                    f"{stored_reports} reports are stored but the chain records {report_events}: "
+                    "a report was added or removed outside the chain.", state.value)
+
+    if (workflow["review_mode"] if "review_mode" in workflow.keys() else "verification") \
+            != (chain_mode or workflow["review_mode"]):
+        return fail(None, "MODE_MISMATCH",
+                    "The stored mode of this request differs from the mode sealed in its history.",
+                    state.value)
+
+    from services.finding_service import verify_findings
+    broken = verify_findings(conn, workflow_id)
+    if broken:
+        return fail(None, "FINDING_HISTORY_INVALID", broken[1], state.value)
 
     if len(rows) != workflow["transition_count"]:
         return fail(None, "COUNT_MISMATCH",

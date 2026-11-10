@@ -158,7 +158,7 @@ def picker(task_id):
     if n == 0:
         problem = "Select at least one reviewer."
     elif required < 1 or required > n:
-        problem = f"Approvals required must be between 1 and {n} (the number of selected reviewers)."
+        problem = f"The number required must be between 1 and {n} (the number of selected reviewers)."
     return render_template("reviewer_picker.html", task=task, items=items, total=total, page=page, pages=pages,
                            filters=filters, levels=rp.LEVELS, selected=selected, selected_ids=set(selected_ids),
                            required=required, problem=problem, max_selected=MAX_SELECTED, default_required=default)

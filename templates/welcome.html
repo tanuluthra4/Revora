@@ -1,42 +1,43 @@
 {% extends 'base.html' %}
-{% block title %}Verified developer proof{% endblock %}
-{% block meta %}<meta name="description" content="Proof-of-Work OS helps developers submit work evidence, get skills reviewed, and share verified proof with recruiters.">
+{% block title %}Get your project reviewed{% endblock %}
+{% block meta %}<meta name="description" content="Revisely is a project review and improvement platform for students and early-career developers. Submit one version of a project, get structured feedback from community reviewers, fix what they find, and share the review if you choose to.">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Proof-of-Work OS">
-    <meta property="og:description" content="Proof-of-Work OS helps developers submit work evidence, get skills reviewed, and share verified proof with recruiters.">
+    <meta property="og:title" content="Revisely">
+    <meta property="og:description" content="Structured project reviews from community reviewers, for students and early-career developers. Sharing is optional and revocable.">
     {% if config.PUBLIC_BASE_URL %}<link rel="canonical" href="{{ config.PUBLIC_BASE_URL }}/">
     <meta property="og:url" content="{{ config.PUBLIC_BASE_URL }}/">{% endif %}{% endblock %}
 {% block body %}
 <nav class="landing-nav" aria-label="Page sections">
     <a href="#how-it-works">How it works</a>
-    <a href="#verification">Verification process</a>
+    <a href="#goals">Two review goals</a>
+    <a href="#trust">What a review is</a>
     <a href="#faq">FAQ</a>
     <a href="{{ url_for('auth.login', role='developer') }}">Log in</a>
 </nav>
 <main class="welcome-page" id="main">
     <div class="welcome-brand">
-        <span class="brand-mark" aria-hidden="true">P</span>
-        <p class="eyebrow">PROOF-OF-WORK OS</p>
-        <h1>Make your work <span>provable.</span></h1>
-        <p class="welcome-copy">A structured way to submit developer evidence, review it, and record trustworthy verification decisions. Join as a Developer or as a Reviewer.</p>
+        <img class="welcome-logo" src="{{ url_for('static', filename='brand/revisely-logo-256.png') }}" srcset="{{ url_for('static', filename='brand/revisely-logo-512.png') }} 2x" width="96" height="96" alt="Revisely logo">
+        <p class="eyebrow">REVISELY</p>
+        <h1>Review it. <span>Revise it.</span></h1>
+        <p class="welcome-copy">Get structured feedback on one version of your project from community reviewers, fix what they find, and ask for a follow-up review. For students and early-career developers.</p>
     </div>
 
     <section class="role-grid" aria-label="Choose how to sign in">
         <article class="role-card developer-card">
             <div class="role-icon" aria-hidden="true">&lt;/&gt;</div>
-            <p class="eyebrow">BUILD &amp; SUBMIT</p>
-            <h2>I'm a Developer</h2>
-            <p>Create tasks, attach project evidence, and track each proof through the verification workflow.</p>
-            <a class="btn btn-primary btn-block" href="{{ url_for('auth.login', role='developer') }}">Continue as Developer <span aria-hidden="true">→</span></a>
-            <p class="role-footnote">New here? <a href="{{ url_for('auth.signup', role='developer') }}">Create a developer account</a>.</p>
+            <p class="eyebrow">GET FEEDBACK</p>
+            <h2>I want a review</h2>
+            <p>Describe a project version, choose reviewers from the directory, read their reports and track each finding until it is fixed.</p>
+            <a class="btn btn-primary btn-block" href="{{ url_for('auth.login', role='developer') }}">Continue as author <span aria-hidden="true">→</span></a>
+            <p class="role-footnote">New here? <a href="{{ url_for('auth.signup', role='developer') }}">Create an author account</a>.</p>
         </article>
 
         <article class="role-card reviewer-card">
             <div class="role-icon" aria-hidden="true">✓</div>
-            <p class="eyebrow">EXAMINE &amp; VERIFY</p>
-            <h2>I'm a Reviewer</h2>
-            <p>Open to everyone. Create a reviewer profile, get found by developers, and record an approval or rejection with a reason on the evidence assigned to you.</p>
-            <a class="btn btn-block" href="{{ url_for('auth.login', role='reviewer') }}">Continue as Reviewer <span aria-hidden="true">→</span></a>
+            <p class="eyebrow">GIVE FEEDBACK</p>
+            <h2>I want to review</h2>
+            <p>Open to everyone. Create a profile, get found by authors, and write a structured report with findings and fixes for the projects assigned to you.</p>
+            <a class="btn btn-block" href="{{ url_for('auth.login', role='reviewer') }}">Continue as reviewer <span aria-hidden="true">→</span></a>
             <p class="role-footnote">Anyone can join as a reviewer. <a href="{{ url_for('auth.signup', role='reviewer') }}">Create a reviewer account</a>.</p>
         </article>
     </section>
@@ -47,33 +48,42 @@
 <section class="info-section" id="how-it-works" aria-labelledby="how-h">
     <h2 id="how-h">How it works</h2>
     <ol class="steps">
-        <li><b>Create a task and attach evidence.</b> Repository links, demos, pull requests, write-ups.</li>
-        <li><b>Choose your reviewers.</b> Pick one to five reviewer accounts and how many must approve (for example 2 of 3).</li>
-        <li><b>Reviewers decide independently.</b> Each records approve or reject with a written note. They cannot see each other&rsquo;s decisions until they have decided.</li>
-        <li><b>Share the result.</b> A verified proof can be shared by a private link that you can revoke at any time.</li>
+        <li><b>Describe one version.</b> Pick a project, give the repository address and commit, the tech stack and what you want reviewed. Revisely never fetches or runs your code and never needs a password or token.</li>
+        <li><b>Choose reviewers.</b> Pick one to five reviewer accounts from the directory and how many must submit a report.</li>
+        <li><b>Read structured reports.</b> Each report says what was assessed and what was not, lists strengths, and gives findings with a severity, an explanation and a suggested fix.</li>
+        <li><b>Fix and follow up.</b> Track every finding (open, acknowledged, fixed, confirmed) and start a new version for another round.</li>
+        <li><b>Share if you want to.</b> Sharing one version is optional and can be revoked at any time.</li>
     </ol>
 </section>
 
-<section class="info-section" id="verification" aria-labelledby="ver-h">
-    <h2 id="ver-h">Verification process</h2>
-    <p>Every proof moves through a fixed state machine: created, in progress, evidence required, evidence submitted, under review, then verified or rejected. The server refuses any step that is not allowed and records the refusal. A proof becomes <b>verified</b> only when the required number of distinct reviewers approve; it is <b>rejected</b> as soon as that number can no longer be reached. Changing evidence starts a new review round, and earlier decisions stay in the history.</p>
-    <p class="muted small" style="margin-top:8px">The history is hash-chained, so later edits are detectable (tamper-evident, not tamper-proof).</p>
+<section class="info-section" id="goals" aria-labelledby="goals-h">
+    <h2 id="goals-h">Two review goals</h2>
+    <div class="goal-grid">
+        <div class="card"><h3>Production readiness</h3><p>Reviewers look for security, correctness, reliability, performance, testing and deployment gaps, and say what they found and what they did not check.</p></div>
+        <div class="card"><h3>Interview preparation</h3><p>Reviewers look at how well you could explain and defend the project, point out gaps in depth, and suggest questions an interviewer might ask.</p></div>
+    </div>
+</section>
+
+<section class="info-section" id="trust" aria-labelledby="trust-h">
+    <h2 id="trust-h">What a review is, and is not</h2>
+    <p>A review is a written opinion from an individual community reviewer about one commit. It is <b>not a certification, an endorsement or a guarantee</b>, and a completed review does not mean a project is ready. Reviewers&rsquo; skills, experience and links are self-reported and Revisely has not verified any of them. Separate accounts do not prove that reviewers are independent of the author, and Revisely cannot tell whether one person controls several accounts.</p>
 </section>
 
 <section class="info-section faq" id="faq" aria-labelledby="faq-h">
     <h2 id="faq-h">FAQ</h2>
-    <details><summary>Who can be a reviewer?</summary><p>Anyone can create a reviewer account and a profile. Skills, experience and links on a profile are self-reported; the platform verifies none of them. Developers choose their reviewers from a searchable directory.</p></details>
-    <details><summary>Does &ldquo;verified&rdquo; mean an organisation certified the developer?</summary><p>No. It means the named reviewer accounts approved the submitted evidence. Reviewer identity and expertise are not independently verified, and several reviewers are not an organisation.</p></details>
-    <details><summary>Can a developer approve their own work?</summary><p>No. Reviewers must be other reviewer accounts, and the server refuses to assign you to your own work. Because anyone can register as a reviewer, check each reviewer&rsquo;s self-reported profile and links before choosing them.</p></details>
-    <details><summary>Who can see my proof?</summary><p>Only you and your assigned reviewers, unless you create a public link. Public pages show reviewer usernames, decisions and notes the reviewer marked public, never e-mails or private notes.</p></details>
-    <details><summary>What if I change my evidence after submitting?</summary><p>Withdraw the submission. A new round starts and earlier approvals no longer count, but they stay in the history.</p></details>
-    <details><summary>Is the audit trail tamper-proof?</summary><p>No, it is tamper-evident. Anyone with database access could rewrite it and its hashes together; the check detects ordinary edits and inconsistencies.</p></details>
+    <details><summary>Who can be a reviewer?</summary><p>Anyone can create a reviewer account and profile. Everything on a profile is self-reported; the platform verifies none of it. Check a reviewer&rsquo;s links before choosing them.</p></details>
+    <details><summary>Does &ldquo;review complete&rdquo; mean my project is ready?</summary><p>No. It only records that the number of reports you asked for has been submitted. Read the findings, including critical and unresolved ones.</p></details>
+    <details><summary>Who can see my reviews?</summary><p>Only you and the reviewers you assigned, until you create a public link for one version. A shared page shows that version&rsquo;s non-private report text and all of its findings. It never shows reviewers&rsquo; private notes, e-mail addresses, your questions or your other projects. You can revoke a link at any time and sharing again creates a new link.</p></details>
+    <details><summary>What do reviewers agree to?</summary><p>Before a reviewer submits a report they must tick a statement that the author may publish the report&rsquo;s non-private text and findings if the author chooses to share it. A report cannot be submitted without it.</p></details>
+    <details><summary>Can I review my own project?</summary><p>No. The same account can never review its own work. Someone who controls two accounts could still try to, and Revisely cannot detect that.</p></details>
+    <details><summary>What about the earlier verified proofs?</summary><p>They stay exactly as they were, including their history and public links.</p></details>
+    <details><summary>Is the record tamper-proof?</summary><p>No, it is tamper-evident. Anyone with database access could rewrite it and its hashes together; the check detects ordinary edits and inconsistencies.</p></details>
 </section>
 
 <footer class="site-footer">
     <a href="https://github.com/tanuluthra4/proof-of-work-os" rel="noopener noreferrer">Source on GitHub</a>
     <a href="#how-it-works">How it works</a>
     <a href="#faq">FAQ</a>
-    <span>Proof-of-Work OS</span>
+    <span>Revisely</span>
 </footer>
 {% endblock %}

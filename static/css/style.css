@@ -55,7 +55,7 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 h1 { font-size: 1.6rem; letter-spacing: -.01em; }
-h2 { font-size: 1.1rem; margin-bottom: 14px; }
+h2, h1.title-sm { font-size: 1.1rem; margin-bottom: 14px; }
 h3 { font-size: 1rem; }
 code, .mono { font-family: var(--mono); font-size: .85em; }
 .muted { color: var(--muted); }
@@ -218,6 +218,8 @@ svg.fsm { width: 100%; min-width: 640px; height: auto; display: block; }
 details summary { cursor: pointer; color: var(--muted); font-size: .88rem; font-weight: 600; }
 details[open] summary { margin-bottom: 10px; }
 
+/* wide tables scroll inside their card instead of widening the page */
+.table-wrap { overflow-x: auto; }
 table.queue { width: 100%; border-collapse: collapse; }
 .queue th, .queue td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: .92rem; }
 .queue th { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
@@ -284,3 +286,26 @@ fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 10px 1
 legend { padding: 0 6px; font-weight: 600; }
 progress { width: 100%; height: 12px; }
 .pill.ok { background: var(--good-soft); color: var(--good); }
+
+/* --- Revisely review mode --- */
+.pill.state-REVIEWED { background: var(--good-soft); color: var(--good); }
+.pill.sev-critical, .pill.sev-high { background: var(--bad-soft); color: var(--bad); }
+.pill.sev-medium { background: var(--warn-soft); color: var(--warn); }
+.pill.sev-low { background: var(--surface-2); color: var(--muted); }
+.report-block h4 { margin: 12px 0 2px; font-size: .9rem; color: var(--muted); }
+.finding { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+.finding h4 { margin: 0 0 6px; color: var(--text); font-size: 1rem; }
+.consent-box { border: 2px solid var(--accent); border-radius: 10px; padding: 12px 14px; margin: 14px 0; background: var(--accent-soft); }
+.radio-row { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; }
+.radio-row input { width: auto; margin-top: 4px; }
+.finding-slot { margin-top: 10px; }
+.finding-slot summary { font-weight: 600; color: var(--text); }
+.share-box { word-break: break-all; font-family: var(--mono); font-size: .8rem; background: var(--surface-2); padding: 8px 10px; border-radius: 8px; }
+.brand { display: inline-flex; align-items: center; gap: 8px; }
+.brand-logo { border-radius: 8px; display: block; }
+.welcome-logo { width: 96px; height: 96px; border-radius: 22px; margin-bottom: 16px; }
+.goal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 680px) { .goal-grid { grid-template-columns: 1fr; } }
+
+/* touch devices: keep small buttons comfortably tappable */
+@media (pointer: coarse) { .btn-sm { min-height: 40px; display: inline-flex; align-items: center; } }

@@ -323,11 +323,227 @@ def _migration_4(conn):
     )
 
 
+def _migration_5(conn):
+    """Revisely: versioned review requests, structured reports, findings, share links.
+
+    Additive only. Nothing is dropped; no existing row is rewritten. Every
+    workflow that exists now keeps review_mode = 'verification' and finishes
+    under the old rules. See the specification, section 2.
+    """
+    _add_column(conn, "workflow_instances", "review_mode TEXT NOT NULL DEFAULT 'verification'")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS submission_versions (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id   INTEGER NOT NULL REFERENCES workflow_instances(id) ON DELETE CASCADE,
+            round         INTEGER NOT NULL,
+            project_id    INTEGER NOT NULL REFERENCES projects(id),
+            review_goal   TEXT NOT NULL CHECK (review_goal IN ('production', 'interview')),
+            repo_url      TEXT NOT NULL,
+            commit_sha    TEXT NOT NULL,
+            demo_url      TEXT,
+            tech_stack    TEXT NOT NULL,
+            questions     TEXT,
+            created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            locked_at     TIMESTAMP,
+            UNIQUE (workflow_id, round)
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS review_reports (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id      INTEGER NOT NULL REFERENCES workflow_instances(id) ON DELETE CASCADE,
+            round            INTEGER NOT NULL,
+            reviewer_id      INTEGER NOT NULL REFERENCES users(id),
+            review_goal      TEXT NOT NULL,
+            summary          TEXT NOT NULL,
+            strengths        TEXT NOT NULL,
+            unresolved       TEXT,
+            assessed         TEXT NOT NULL,
+            not_assessed     TEXT NOT NULL,
+            interview_qs     TEXT,
+            private_notes    TEXT,
+            consent_ack_at   TIMESTAMP NOT NULL,
+            consent_version  TEXT NOT NULL CHECK (length(consent_version) > 0),
+            content_digest   TEXT NOT NULL,
+            created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (workflow_id, round, reviewer_id)
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS review_findings (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            report_id        INTEGER NOT NULL REFERENCES review_reports(id) ON DELETE CASCADE,
+            seq              INTEGER NOT NULL,
+            severity         TEXT NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low')),
+            category         TEXT NOT NULL,
+            title            TEXT NOT NULL,
+            explanation      TEXT NOT NULL,
+            suggested_fix    TEXT NOT NULL,
+            reasoning        TEXT,
+            file_path        TEXT,
+            commit_ref       TEXT,
+            repro_evidence   TEXT,
+            prior_finding_id INTEGER REFERENCES review_findings(id),
+            UNIQUE (report_id, seq)
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS finding_updates (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            finding_id   INTEGER NOT NULL REFERENCES review_findings(id) ON DELETE CASCADE,
+            seq          INTEGER NOT NULL,
+            actor_id     INTEGER NOT NULL REFERENCES users(id),
+            actor_role   TEXT NOT NULL CHECK (actor_role IN ('owner', 'reviewer')),
+            from_status  TEXT NOT NULL,
+            to_status    TEXT NOT NULL,
+            note         TEXT NOT NULL,
+            commit_ref   TEXT,
+            created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            prev_hash    TEXT NOT NULL,
+            hash         TEXT NOT NULL,
+            UNIQUE (finding_id, seq)
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS share_links (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            workflow_id   INTEGER NOT NULL REFERENCES workflow_instances(id) ON DELETE CASCADE,
+            round         INTEGER NOT NULL,
+            kind          TEXT NOT NULL CHECK (kind IN ('proof', 'report')),
+            token         TEXT NOT NULL UNIQUE,
+            created_by    INTEGER REFERENCES users(id),
+            created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            revoked_at    TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_share_active "
+        "ON share_links(workflow_id, round, kind) WHERE revoked_at IS NULL"
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_reports_workflow ON review_reports(workflow_id, round)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_findings_report ON review_findings(report_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_updates_finding ON finding_updates(finding_id, seq)")
+
+    # Append-only at the database level. A parent that is itself being deleted
+    # (cascade) is allowed through, exactly like review_decisions.
+    for table, parent_sql in (
+        ("review_reports",
+         "EXISTS (SELECT 1 FROM workflow_instances WHERE id = OLD.workflow_id)"),
+        ("review_findings",
+         "EXISTS (SELECT 1 FROM review_reports WHERE id = OLD.report_id)"),
+        ("finding_updates",
+         "EXISTS (SELECT 1 FROM review_findings WHERE id = OLD.finding_id)"),
+    ):
+        conn.execute(f"DROP TRIGGER IF EXISTS {table}_no_update")
+        conn.execute(
+            f"CREATE TRIGGER {table}_no_update BEFORE UPDATE ON {table} "
+            f"BEGIN SELECT RAISE(ABORT, '{table} is append-only'); END"
+        )
+        conn.execute(f"DROP TRIGGER IF EXISTS {table}_no_delete")
+        conn.execute(
+            f"CREATE TRIGGER {table}_no_delete BEFORE DELETE ON {table} "
+            f"WHEN {parent_sql} BEGIN SELECT RAISE(ABORT, '{table} is append-only'); END"
+        )
+
+    # A submitted version is immutable.
+    conn.execute("DROP TRIGGER IF EXISTS submission_versions_locked_update")
+    conn.execute(
+        """
+        CREATE TRIGGER submission_versions_locked_update BEFORE UPDATE ON submission_versions
+        WHEN OLD.locked_at IS NOT NULL
+        BEGIN SELECT RAISE(ABORT, 'a submitted version is immutable'); END
+        """
+    )
+    conn.execute("DROP TRIGGER IF EXISTS submission_versions_locked_delete")
+    conn.execute(
+        """
+        CREATE TRIGGER submission_versions_locked_delete BEFORE DELETE ON submission_versions
+        WHEN OLD.locked_at IS NOT NULL
+             AND EXISTS (SELECT 1 FROM workflow_instances WHERE id = OLD.workflow_id)
+        BEGIN SELECT RAISE(ABORT, 'a submitted version is immutable'); END
+        """
+    )
+
+    # Share links: never deleted; the only permitted change is revoking an active link.
+    conn.execute("DROP TRIGGER IF EXISTS share_links_guard_update")
+    conn.execute(
+        """
+        CREATE TRIGGER share_links_guard_update BEFORE UPDATE ON share_links
+        WHEN OLD.revoked_at IS NOT NULL
+             OR NEW.revoked_at IS NULL
+             OR NEW.token != OLD.token OR NEW.workflow_id != OLD.workflow_id
+             OR NEW.round != OLD.round OR NEW.kind != OLD.kind
+        BEGIN SELECT RAISE(ABORT, 'share links can only be revoked'); END
+        """
+    )
+    conn.execute("DROP TRIGGER IF EXISTS share_links_no_delete")
+    conn.execute(
+        """
+        CREATE TRIGGER share_links_no_delete BEFORE DELETE ON share_links
+        WHEN EXISTS (SELECT 1 FROM workflow_instances WHERE id = OLD.workflow_id)
+        BEGIN SELECT RAISE(ABORT, 'share links are never deleted'); END
+        """
+    )
+
+    # Carry over existing public proof links. The legacy columns stay in place
+    # (a rollback to the previous version still reads them) but are no longer
+    # the source of truth.
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO share_links (workflow_id, round, kind, token, created_at, revoked_at)
+        SELECT id, round, 'proof', share_token,
+               COALESCE(completed_at, started_at, CURRENT_TIMESTAMP), share_revoked_at
+        FROM workflow_instances WHERE share_token IS NOT NULL
+        """
+    )
+
+
+def _migration_6(conn):
+    """Close a hole in the share-link guard added by migration 5.
+
+    The old trigger compared only some columns, and with `!=`, which is NULL
+    (so "not changed") whenever either side is NULL. An UPDATE could therefore
+    revoke a link and change id, created_by or created_at at the same time.
+    The rule is now: a link may be revoked exactly once, and no other column may
+    change in any way. Comparisons use IS NOT, which is NULL-safe. Idempotent;
+    no row is touched.
+    """
+    conn.execute("DROP TRIGGER IF EXISTS share_links_guard_update")
+    conn.execute(
+        """
+        CREATE TRIGGER share_links_guard_update BEFORE UPDATE ON share_links
+        WHEN OLD.revoked_at IS NOT NULL
+             OR NEW.revoked_at IS NULL
+             OR NEW.id IS NOT OLD.id
+             OR NEW.workflow_id IS NOT OLD.workflow_id
+             OR NEW.round IS NOT OLD.round
+             OR NEW.kind IS NOT OLD.kind
+             OR NEW.token IS NOT OLD.token
+             OR NEW.created_by IS NOT OLD.created_by
+             OR NEW.created_at IS NOT OLD.created_at
+        BEGIN SELECT RAISE(ABORT, 'share links can only be revoked'); END
+        """
+    )
+
+
 MIGRATIONS = [
     (1, _migration_1),
     (2, _migration_2),
     (3, _migration_3),
     (4, _migration_4),
+    (5, _migration_5),
+    (6, _migration_6),
 ]
 LATEST_VERSION = MIGRATIONS[-1][0]
 

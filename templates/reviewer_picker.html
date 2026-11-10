@@ -3,8 +3,9 @@
 {% from '_reviewer_macros.html' import tags, trust_note %}
 {% block title %}Choose reviewers{% endblock %}
 {% block content %}
+{% set noun = 'report' if task['review_mode'] == 'review' else 'approval' %}
 <div class="page-head"><div><h1>Choose reviewers for &ldquo;{{ task['title'] }}&rdquo;</h1>
-<p>Pick real reviewer accounts from the directory. Choosing someone does not guarantee they will approve.</p></div>
+<p>Pick real reviewer accounts from the directory. Choosing someone does not guarantee any particular outcome.</p></div>
 <div class="actions-row"><a class="btn btn-ghost btn-sm" href="{{ url_for('tasks.task_detail', task_id=task['id']) }}">&larr; Back to task</a></div></div>
 {{ trust_note() }}
 
@@ -23,20 +24,20 @@
     {% else %}<p class="muted">Nobody selected yet. Use the search below.</p>{% endif %}
 
     <form method="get" action="{{ url_for('reviewers.picker', task_id=task['id']) }}" class="inline-form">
-        <label for="required">Approvals required</label>
+        <label for="required">{{ noun|capitalize }}s required</label>
         <input id="required" type="number" name="required" min="1" max="{{ [selected|length, 1]|max }}" value="{{ required }}" style="width:6rem">
         {% for k in ('q', 'skill', 'expertise', 'level') %}{% if filters[k] %}<input type="hidden" name="{{ k }}" value="{{ filters[k] }}">{% endif %}{% endfor %}
         <button type="submit" class="btn btn-ghost btn-sm">Update</button>
     </form>
     <p role="status" class="{{ 'notice bad' if problem else 'notice good' }}">
-        {% if problem %}{{ problem }}{% else %}{{ selected|length }} reviewer{{ '' if selected|length == 1 else 's' }} selected; {{ required }} approval{{ '' if required == 1 else 's' }} required ({{ required }} of {{ selected|length }}).{% endif %}
+        {% if problem %}{{ problem }}{% else %}{{ selected|length }} reviewer{{ '' if selected|length == 1 else 's' }} selected; {{ required }} {{ noun }}{{ '' if required == 1 else 's' }} required ({{ required }} of {{ selected|length }}).{% endif %}
     </p>
     <form method="post" action="{{ url_for('tasks.choose_reviewer', task_id=task['id']) }}">
         {{ csrf() }}
         {% for s in selected %}<input type="hidden" name="reviewer_ids" value="{{ s.id }}">{% endfor %}
         <input type="hidden" name="required" value="{{ required }}">
         <button type="submit" class="btn-primary" {{ 'disabled' if problem }}>Save reviewers</button>
-        <span class="hint">Default policy is {{ default_required }} approvals. Supported: 1 of 1, 2 of 2, 2 of 3 and other k of n up to 5 reviewers.</span>
+        <span class="hint">Default policy is {{ default_required }} {{ noun }}s. Supported: 1 of 1, 2 of 2, 2 of 3 and other k of n up to 5 reviewers.</span>
     </form>
 </section>
 

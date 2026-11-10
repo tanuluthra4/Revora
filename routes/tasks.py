@@ -1,5 +1,4 @@
 import re
-import secrets
 from collections import OrderedDict
 
 from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, session, url_for
@@ -21,6 +20,7 @@ from services.evidence_service import (
 )
 from services.fsm_view import EVENT_LABELS, STATE_LABELS, build_fsm_view
 from services.review_service import review_panel, tally
+from services.share_service import create_link, revoke_link
 from services.reviewer_profiles import ProfileError, selectable_reviewers
 
 tasks_bp = Blueprint("tasks", __name__)
@@ -29,7 +29,7 @@ engine = AutomataEngine()
 PRIORITIES = ("low", "medium", "high")
 LOCKED_FOR_EDIT = {"EVIDENCE_SUBMITTED", "VALIDATING", "VERIFIED"}
 # Reviewers may open a task only once its evidence has been submitted.
-REVIEWER_VISIBLE = {"EVIDENCE_SUBMITTED", "VALIDATING", "VERIFIED", "REJECTED"}
+REVIEWER_VISIBLE = {"EVIDENCE_SUBMITTED", "VALIDATING", "VERIFIED", "REJECTED", "REVIEWED"}
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -40,7 +40,11 @@ def _load_task(conn, task_id):
         SELECT t.id, t.user_id, t.project_id, t.title, t.description, t.status, t.priority,
                t.due_date, t.created_at, p.title AS project_title,
                w.id AS workflow_id, w.current_state, w.round, w.result,
-               w.completed_at AS decided_at, w.share_token, w.share_revoked_at,
+               w.completed_at AS decided_at, w.review_mode,
+               (SELECT token FROM share_links s WHERE s.workflow_id = w.id AND s.round = w.round
+                  AND s.kind = 'proof' AND s.revoked_at IS NULL) AS share_token,
+               (SELECT COUNT(*) FROM share_links s WHERE s.workflow_id = w.id AND s.round = w.round
+                  AND s.kind = 'proof' AND s.revoked_at IS NOT NULL) AS share_revoked_count,
                w.required_approvals, u.username AS owner_name
         FROM tasks t
         JOIN workflow_instances w ON w.task_id = t.id
@@ -199,7 +203,7 @@ def edit_task(task_id):
             flash("Task updated.", "success")
             return redirect(url_for("tasks.task_detail", task_id=task_id))
 
-        return render_template("task_form.html", projects=projects, task=task, mode="edit",
+        return render_template("task_form.html", projects=projects, task=dict(task), mode="edit",
                                priorities=PRIORITIES)
     finally:
         conn.close()
@@ -211,6 +215,10 @@ def delete_task(task_id):
     conn = get_db_connection()
     try:
         task = _owned_task_or_404(conn, task_id)
+        if task["review_mode"] == "review" and conn.execute(
+                "SELECT 1 FROM review_reports WHERE workflow_id = ?", (task["workflow_id"],)).fetchone():
+            flash("A request that has reviewer reports is a permanent record and cannot be deleted.", "error")
+            return redirect(url_for("tasks.task_detail", task_id=task_id))
         if task["current_state"] == "VERIFIED":
             flash("Verified tasks are permanent proof records and cannot be deleted.", "error")
             return redirect(url_for("tasks.task_detail", task_id=task_id))
@@ -252,6 +260,8 @@ def task_detail(task_id):
         access = _access_for(conn, task)
         if access is None:
             abort(404)
+        if task["review_mode"] == "review":
+            return redirect(url_for("reviews.detail", task_id=task_id))
 
         is_owner = access == "owner"
         is_reviewer = access == "reviewer"
@@ -299,7 +309,7 @@ def task_detail(task_id):
 
         probe_events = [e for e in WorkflowEvent if e not in get_allowed_events(state)]
         in_review = task["current_state"] in ("EVIDENCE_SUBMITTED", "VALIDATING")
-        share_active = bool(task["share_token"]) and not task["share_revoked_at"]
+        share_active = bool(task["share_token"])
 
         return render_template(
             "task_detail.html",
@@ -334,7 +344,7 @@ def task_detail(task_id):
             default_required=current_app.config["DEFAULT_REQUIRED_APPROVALS"],
             share_url=(url_for("public.proof", token=task["share_token"], _external=True)
                        if share_active else None),
-            share_revoked=bool(task["share_token"]) and bool(task["share_revoked_at"]),
+            share_revoked=not share_active and bool(task["share_revoked_count"]),
         )
     finally:
         conn.close()
@@ -431,9 +441,14 @@ def choose_reviewer(task_id):
                 [username for _, username, _ in chosen], request.form.get("required"),
             )
             session.pop(f"pick:{task_id}", None)
-            flash(f"Evidence will be sent to {', '.join(names)}; "
-                  f"{required} of {len(names)} must approve. Selecting reviewers does not guarantee approval.",
-                  "success")
+            if task["review_mode"] == "review":
+                flash(f"This version will be sent to {', '.join(names)}; {required} of {len(names)} "
+                      "must submit a report. Selecting reviewers does not guarantee any particular outcome.",
+                      "success")
+            else:
+                flash(f"Evidence will be sent to {', '.join(names)}; "
+                      f"{required} of {len(names)} must approve. Selecting reviewers does not guarantee approval.",
+                      "success")
         except ProfileError as error:
             flash_errors(error.problems)
             return redirect(url_for("reviewers.picker", task_id=task_id))
@@ -457,18 +472,7 @@ def share_task(task_id):
         if task["current_state"] != "VERIFIED":
             flash("Only verified proofs can be shared.", "error")
         else:
-            with transaction(conn):
-                # An active link is kept; a revoked one is replaced by a brand-new token.
-                conn.execute(
-                    """
-                    UPDATE workflow_instances
-                    SET share_token = CASE WHEN share_token IS NULL OR share_revoked_at IS NOT NULL
-                                           THEN ? ELSE share_token END,
-                        share_revoked_at = NULL
-                    WHERE id = ?
-                    """,
-                    (secrets.token_urlsafe(24), task["workflow_id"]),
-                )
+            create_link(conn, task["workflow_id"], task["round"], "proof", g.user["id"])
             flash("Public link created. Anyone with the link can view this verified proof.", "success")
     finally:
         conn.close()
@@ -482,12 +486,7 @@ def unshare_task(task_id):
     conn = get_db_connection()
     try:
         task = _owned_task_or_404(conn, task_id)
-        with transaction(conn):
-            conn.execute(
-                "UPDATE workflow_instances SET share_revoked_at = CURRENT_TIMESTAMP "
-                "WHERE id = ? AND share_token IS NOT NULL AND share_revoked_at IS NULL",
-                (task["workflow_id"],),
-            )
+        revoke_link(conn, task["workflow_id"], task["round"], "proof")
         flash("Public link revoked. It no longer shows this proof.", "success")
     finally:
         conn.close()
@@ -509,10 +508,15 @@ def review_queue():
                      WHERE x.workflow_id = w.id AND x.round = w.round
                        AND x.status = 'assigned') AS reviewer_count,
                    (SELECT COUNT(*) FROM review_decisions d
-                     WHERE d.workflow_id = w.id AND d.round = w.round) AS decided_count,
+                     WHERE d.workflow_id = w.id AND d.round = w.round)
+                   + (SELECT COUNT(*) FROM review_reports q
+                     WHERE q.workflow_id = w.id AND q.round = w.round) AS decided_count,
                    (SELECT COUNT(*) FROM review_decisions m
                      WHERE m.workflow_id = w.id AND m.round = w.round
-                       AND m.reviewer_id = ?) AS my_decisions,
+                       AND m.reviewer_id = ?)
+                   + (SELECT COUNT(*) FROM review_reports mq
+                     WHERE mq.workflow_id = w.id AND mq.round = w.round
+                       AND mq.reviewer_id = ?) AS my_decisions, w.review_mode,
                    (SELECT MAX(created_at) FROM state_transitions s
                      WHERE s.workflow_id = w.id) AS last_change
             FROM workflow_instances w
@@ -524,8 +528,8 @@ def review_queue():
             ORDER BY last_change %s
         """
         me = g.user["id"]
-        queue = conn.execute(base % ("'EVIDENCE_SUBMITTED', 'VALIDATING'", "ASC"), (me, me, me)).fetchall()
-        decided = conn.execute(base % ("'VERIFIED', 'REJECTED'", "DESC"), (me, me, me)).fetchall()
+        queue = conn.execute(base % ("'EVIDENCE_SUBMITTED', 'VALIDATING'", "ASC"), (me, me, me, me)).fetchall()
+        decided = conn.execute(base % ("'VERIFIED', 'REJECTED', 'REVIEWED'", "DESC"), (me, me, me, me)).fetchall()
     finally:
         conn.close()
     return render_template("review_queue.html", queue=queue, decided=decided)

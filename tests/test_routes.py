@@ -138,8 +138,8 @@ def test_home_page_offers_separate_role_portals(app):
     response = b.get("/")
     html = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert "I'm a Developer" in html
-    assert "I'm a Reviewer" in html
+    assert "I want a review" in html      # landing copy rewritten for Revisely
+    assert "I want to review" in html
     assert "/login?role=developer" in html
     assert "/login?role=reviewer" in html
 
@@ -691,10 +691,10 @@ def test_review_queue_shows_progress(app, alice, trio):
 
 def test_landing_page_seo_and_navigation(app):
     html = Browser(app).get("/").get_data(as_text=True)
-    assert 'name="description" content="Proof-of-Work OS helps developers submit work evidence, get skills reviewed, and share verified proof with recruiters."' in html
+    assert 'name="description" content="Revisely is a project review and improvement platform' in html
     assert 'property="og:title"' in html and 'rel="icon"' in html
     assert "noindex" not in html
-    for anchor in ("#how-it-works", "#verification", "#faq"):
+    for anchor in ("#how-it-works", "#goals", "#trust", "#faq"):
         assert f'href="{anchor}"' in html and f'id="{anchor[1:]}"' in html
     assert 'href="#"' not in html                       # no dead links
     assert "canonical" not in html                      # PUBLIC_BASE_URL not configured

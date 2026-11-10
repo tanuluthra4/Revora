@@ -3,7 +3,7 @@
 {% block content %}
 <div class="card empty" style="max-width:560px;margin:40px auto">
     <div class="err-code">{{ code }}</div>
-    <h3 style="margin-top:10px">{{ title }}</h3>
+    <h1 class="title-sm" style="margin-top:10px">{{ title }}</h1>
     <p>{{ message }}</p>
     <p style="margin-top:18px"><a class="btn btn-primary" href="{{ url_for('main.home') }}">Back to start</a></p>
 </div>

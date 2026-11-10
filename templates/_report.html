@@ -1,0 +1,22 @@
+{# Read-only report body. `public` hides everything that is not for the public page. #}
+{% macro report_body(r) %}
+<div class="report-block">
+    <h4>Summary</h4><p class="prewrap">{{ r['summary'] }}</p>
+    <h4>Strengths</h4><p class="prewrap">{{ r['strengths'] }}</p>
+    {% if r['unresolved'] %}<h4>Unresolved concerns</h4><p class="prewrap">{{ r['unresolved'] }}</p>{% endif %}
+    <h4>What was assessed</h4><p class="prewrap">{{ r['assessed'] }}</p>
+    <h4>What was NOT assessed</h4><p class="prewrap">{{ r['not_assessed'] }}</p>
+    {% if r['interview_qs'] %}<h4>Interview questions to prepare for</h4><p class="prewrap">{{ r['interview_qs'] }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro finding_head(f) %}
+<h4 id="finding-{{ f['id'] }}"><span class="pill sev-{{ f['severity'] }}">{{ f['severity']|capitalize }}</span>
+    <span class="pill">{{ f['category'] }}</span> {{ f['title'] }}
+    <span class="pill {{ 'ok' if f['status'] == 'confirmed' else '' }}">{{ f['status_label'] }}</span></h4>
+<p class="prewrap">{{ f['explanation'] }}</p>
+<p><b>Suggested fix:</b> <span class="prewrap">{{ f['suggested_fix'] }}</span></p>
+{% if f['reasoning'] %}<p><b>Reasoning:</b> <span class="prewrap">{{ f['reasoning'] }}</span></p>{% endif %}
+{% if f['file_path'] %}<p class="small"><b>File:</b> <span class="mono">{{ f['file_path'] }}</span>{% if f['commit_ref'] %} &middot; <b>Commit:</b> <span class="mono">{{ f['commit_ref'] }}</span>{% endif %}</p>{% endif %}
+{% if f['repro_evidence'] %}<p class="small"><b>How to reproduce:</b> <span class="prewrap">{{ f['repro_evidence'] }}</span></p>{% endif %}
+{% endmacro %}

@@ -27,6 +27,7 @@ _LAYOUT = {
     WorkflowState.VALIDATING: (840, ROW1),
     WorkflowState.REJECTED: (650, ROW2),
     WorkflowState.VERIFIED: (840, ROW2),
+    WorkflowState.REVIEWED: (460, ROW2),
 }
 
 EVENT_LABELS = {
@@ -41,6 +42,9 @@ EVENT_LABELS = {
     WorkflowEvent.REASSIGN_REVIEWER: "Replace a reviewer",
     WorkflowEvent.WITHDRAW: "Withdraw submission to change evidence",
     WorkflowEvent.RESTART: "Restart after rejection",
+    WorkflowEvent.SUBMIT_REPORT: "Submit a review report",
+    WorkflowEvent.COMPLETE_REVIEW: "Review complete (enough reports)",
+    WorkflowEvent.NEW_VERSION: "Start a new version",
 }
 
 STATE_LABELS = {
@@ -51,6 +55,7 @@ STATE_LABELS = {
     WorkflowState.VALIDATING: "Under review",
     WorkflowState.VERIFIED: "Verified",
     WorkflowState.REJECTED: "Rejected",
+    WorkflowState.REVIEWED: "Review complete",
 }
 
 HAPPY_PATH = [
@@ -71,6 +76,8 @@ def progress_percent(state_value):
         state = WorkflowState(state_value)
     except ValueError:
         return 0
+    if state == WorkflowState.REVIEWED:
+        return 100          # the review is complete; this says nothing about readiness
     if state == WorkflowState.REJECTED:
         return round(100 * HAPPY_PATH.index(WorkflowState.VALIDATING) / (len(HAPPY_PATH) - 1))
     return round(100 * HAPPY_PATH.index(state) / (len(HAPPY_PATH) - 1))

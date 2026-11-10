@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Proof-of-Work OS{% endblock %} | POW-OS</title>
+    <title>{% block title %}Revisely{% endblock %} | Revisely</title>
     {% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='brand/favicon-16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='brand/apple-touch-icon.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -14,7 +16,7 @@
 {% if current_user %}
 <header class="topbar">
     <div class="topbar-inner">
-        <a class="brand" href="{{ url_for('main.home') }}">Proof<span>-of-Work</span> OS</a>
+        <a class="brand" href="{{ url_for('main.home') }}"><img src="{{ url_for('static', filename='brand/header-48.png') }}" srcset="{{ url_for('static', filename='brand/revisely-logo-96.png') }} 2x" width="32" height="32" alt="" class="brand-logo">Revisely</a>
         <nav class="nav" aria-label="Main">
             {% if current_user['role'] == 'reviewer' %}
             <a href="{{ url_for('tasks.review_queue') }}" class="{{ 'active' if request.endpoint == 'tasks.review_queue' }}">Review requests</a>
@@ -23,6 +25,7 @@
             <a href="{{ url_for('main.dashboard') }}" class="{{ 'active' if request.endpoint == 'main.dashboard' }}">Dashboard</a>
             <a href="{{ url_for('projects.projects') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('projects.') }}">Projects</a>
  <a href="{{ url_for('reviewers.directory') }}" class="{{ 'active' if request.endpoint == 'reviewers.directory' }}">Find reviewers</a>
+            <a href="{{ url_for('reviews.new_request') }}" class="{{ 'active' if request.endpoint == 'reviews.new_request' }}">+ Request a review</a>
             <a href="{{ url_for('tasks.add_task') }}" class="{{ 'active' if request.endpoint == 'tasks.add_task' }}">+ New task</a>
             <a href="{{ url_for('public.profile', username=current_user['username']) }}">My public profile</a>
             {% endif %}

@@ -1,18 +1,40 @@
-# Proof-of-Work OS
+# Revisely (internal name: Proof-of-Work OS)
 
-**An automata-based evidence verification system for developer skills.**
+**A project review and improvement platform for students and early-career developers.** Authors submit one version of a project, community reviewers write structured reports with findings, authors track and fix those findings, and a follow-up version can be reviewed again. Sharing a review is optional, per version and revocable.
 
-Live deployment: https://proof-of-work-os.onrender.com
+The codebase, repository and Render service keep the internal name *Proof-of-Work OS*. The original evidence-verification workflow is still here, unchanged, for existing records and for tasks created through the old "New task" form.
+
+Live deployment (previous version): https://proof-of-work-os.onrender.com. Nothing in this repository deploys or modifies it. See `docs/OPERATIONS.md` for the staged rollout and rollback.
+
+## What Revisely adds (review mode)
+
+- **Review requests** are about one named project and one explicit *version* (repository address, commit SHA, tech stack, demo, questions, review goal: *production readiness* or *interview preparation*). A submitted version is locked (database trigger plus a digest sealed in the audit chain).
+- **Structured plain-text reports**: summary, strengths, unresolved concerns, what was assessed, what was **not** assessed, optional interview questions, and findings (severity, category, explanation, suggested fix, reasoning, file, commit, reproduction). Private notes stay with their author.
+- **Reviewer consent is enforced on the server.** A report cannot be submitted unless the reviewer acknowledged the disclosure (version `v1`): *the student may publish the report's non-private text and findings if they choose to share it*. The engine refuses the event otherwise (`GUARD_FAILED`, logged, nothing stored), whatever the browser sent. The acknowledgment version is part of the report digest sealed in the audit chain, and `consent_ack_at`/`consent_version` are `NOT NULL` columns.
+- **Quorum is not readiness.** When the required number of reports exists the system fires `COMPLETE_REVIEW` and the request moves to `REVIEWED`. That records that the review is finished. It records no verdict: no result, no completion timestamp, the task is not marked completed, and open critical findings stay visible.
+- **Finding lifecycle** (stored as open, acknowledged, fixed, confirmed, wont_fix, reopened; shown as *Open*, *In progress*, *Fixed — awaiting verification*, *Resolved — verified by the reviewer*, *Accepted — unresolved*, *Reopened — still unresolved*) with role-restricted transitions and a hash chain per finding. Owners cannot confirm their own fixes; only the reviewer who wrote a finding can confirm or reopen it.
+- **Follow-up versions** (`NEW_VERSION`): the next round starts from an editable copy of the version; earlier reports and findings stay attached to their own version.
+- **Opt-in sharing of one version** at `/r/<token>`: project title, repository address, commit, tech stack, each reviewer's non-private report text and **all** findings (including critical and unresolved ones). Never private notes, e-mail addresses, the author's questions, session data or other projects. Revoking returns HTTP 410 with no data; sharing again creates a new token and the old one stays dead.
+- **No repository access**: nothing is fetched, cloned or executed, and repository credentials are never requested or stored. The commit SHA is not verified to exist.
+- **No ratings, endorsements, credentials or reputation scores.** Reviewer information is self-reported and labelled so.
+
+### Self-review and multiple accounts (limits)
+
+The same account can never review its own request: it is blocked when choosing reviewers, again when submitting, and again when a report is filed. Registration is open, so **one person who controls several accounts cannot be detected**. Account separation does not prove reviewer independence, and nothing in the interface or these docs claims it does. A reader of a shared review should judge the named reviewers themselves.
+
+### Expert extension point (not built)
+
+Reviews are community reviews. Verified-expertise claims are deliberately not made. If expert review is added later it should be a separate reviewer class whose expertise is checked through its own onboarding evidence, stored as data (not inferred from self-reported profiles), and shown separately from community reports. Nothing here implements or implies it.
 
 ## Problem
 
 Skill lists and task trackers are self-reported: anyone can tick "Completed" or write "I know Flask". Recruiters cannot tell claim from proof.
-Proof-of-Work OS makes a claim count only after it passes a **controlled verification lifecycle**: the developer attaches evidence, a *different* person reviews it, and every step is recorded in a tamper-evident log. The lifecycle is enforced by a finite-state machine, not by convention.
+The original Proof-of-Work OS makes a claim count only after it passes a **controlled verification lifecycle**: the developer attaches evidence, a *different* person reviews it, and every step is recorded in a tamper-evident log. The lifecycle is enforced by a finite-state machine, not by convention.
 
 ## Features
 
 - Accounts with hashed passwords, CSRF protection, per-user data isolation
-- Projects and tasks (create / view / edit / delete); every task gets one workflow
+- Projects (create and list only; there is no project edit or delete page) and tasks (create / view / edit / delete); every task gets one workflow
 - **Finite-state machine** governing `CREATED → IN_PROGRESS → EVIDENCE_REQUIRED → EVIDENCE_SUBMITTED → VALIDATING → VERIFIED / REJECTED` (+ `RESTART` after rejection)
 - Evidence submission (repo, commit, PR, deployment, demo, write-up, other link) with strict validation; evidence is locked once submitted
 - **Two separate account types, chosen at sign-up and sign-in** (landing page: *I'm a Developer* / *I'm a Reviewer*). Developers manage tasks and evidence; reviewers have their own page. Neither can use the other's area.
@@ -98,6 +120,8 @@ Migration 4 (reviewer profiles) reuses the existing `profiles` table (display na
 
 Migration 3 (multi-reviewer) adds `review_assignments` (per workflow/round/reviewer; `assigned` or `cancelled`, never deleted), `review_decisions` (one row per reviewer per round: decision, shared note, private note, public flag, evidence digest, timestamp; append-only triggers), `state_transitions.meta`, `workflow_instances.required_approvals` and `share_revoked_at`. Existing single-reviewer assignments become assignments; **no historical decisions are fabricated**: old proofs keep their original chain (verified by a test using a real v2 database) and the public page derives the old reviewer's decision from that chain.
 
+Migration 5 adds the review-mode tables (versions, reports, findings, finding updates, share links). Migration 6 replaces the `share_links` update trigger so a link can only be revoked (one way) and no other column can change, even in the same UPDATE. Full detail: `docs/DATABASE.md`.
+
 Upgrade: just start the app or run `flask --app app init-db`. Safe to repeat. Back up your `.db` first as good practice.
 
 `tasks.status` (Pending/Completed) is the owner's **self-reported** progress. The **workflow state** is the verified truth. Approval also sets status to Completed.
@@ -139,16 +163,25 @@ UPDATE state_transitions SET reason = 'edited' WHERE seq = 1;
 | `PUBLIC_BASE_URL` | Optional, e.g. `https://proof-of-work-os.onrender.com`. Only if set are canonical/`og:url` tags emitted |
 | `PORT` | Used by `python app.py` |
 
+Commands: `flask --app app init-db` (create/upgrade; takes a verified pre-migration copy first), `flask --app app backup-db [--out PATH]` (consistent verified copy, safe while running), `flask --app app set-role EMAIL ROLE`.
+
+## More documentation
+
+`docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/OPERATIONS.md` (deployment, backup, restore, rollback), `docs/TESTING.md`, `docs/E2E_CHECKLIST.md`, `docs/AUDIT_REPORT.md` (audit, changes, security, readiness, limitations).
+
 ## Tests
 
 ```bash
-python -m pytest -q
+pip install -r requirements.txt -r requirements-dev.txt
+PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider          # everything
+python3 -m pytest -q tests/test_migration5.py                                # migration 5 + backups
+python3 -m pytest -q tests/test_review_engine.py tests/test_review_routes.py # review mode, consent, sharing
 ```
-The suite has 175 tests as of this version. Tests use temporary databases and never touch `database/pow_os.db`. They cover transitions, invalid moves, role/guard enforcement, rollback, concurrency, k-of-n quorum (1/1, 2/2, 2/3), rejection when approval is impossible, duplicate votes, reassignment, withdrawal, evidence-change guard, tamper detection (edited, fabricated or removed decisions; forged quorum), migrations from real v2 and v3 databases, open reviewer signup and forged-role rejection, reviewer profiles, privacy flags, directory filters and pagination, the picker, independence and private-note privacy, public-page privacy and revocation, SEO/robots headers, and HTTP end-to-end flows.
+Tests use temporary databases and never touch `database/pow_os.db`. Migration tests build databases from the real legacy schema (`schema.sql` plus migrations 1-4 and hand-sealed chains). They cover transitions, invalid moves, role/guard enforcement, rollback, concurrency, k-of-n quorum, tamper detection, migrations, open reviewer signup, profiles and privacy, directory and picker, public-page privacy and revocation, SEO headers, HTTP flows, and for review mode: consent bypass by direct POST, report digests, mode guards, finding lifecycle, version locking, per-version sharing and revocation.
 
 ## Deployment (Render)
 
-`render.yaml` runs gunicorn with a generated `SECRET_KEY`. Reviewer sign-up needs no environment variables (remove `REVIEWER_EMAILS`, `REVIEWER_INVITE_CODE` and `REVIEWER_OPEN_SIGNUP` from the dashboard). Migrations 3 and 4 run automatically on start and only adds tables/columns; nothing destructive. Do not delete or recreate the production database to test this. **SQLite on Render's free plan is ephemeral** — data resets on deploy/restart. For persistence attach a paid disk and set `DATABASE_PATH` (see comments in `render.yaml`) or move to PostgreSQL (not implemented).
+See **`docs/OPERATIONS.md`** for the approved plan: a paid Render web service with a persistent disk and SQLite, staging first, backups, restore and rollback. `render.yaml` carries the disk settings only as commented guidance; applying them is a manual step that needs the owner's explicit approval. **Without a disk, SQLite on Render's free plan is ephemeral** and data is lost on every deploy or restart. Migration 5 runs on start, after an automatic verified copy (`<db>.pre-v5.bak`); if that copy cannot be made, the app does not migrate.
 
 ## Known limitations / honest claims
 
@@ -156,10 +189,12 @@ The suite has 175 tests as of this version. Tests use temporary databases and ne
 - **Not built (future work):** ratings, endorsements and reputation (would need abuse resistance and enough data), e-mail verification, link ownership verification (e.g. proving control of a GitHub account), reporting/moderation of profiles, rate limiting, reviewer notifications.
 - **Tamper-evident, not tamper-proof.** Anyone who can write the SQLite file can recompute the whole chain. Private notes and sharing columns are outside the hash chain. Anchoring `chain_head` externally is future work.
 - **The completeness checklist is not proof of authorship** and does not measure code quality. No automated GitHub checks.
-- Share tokens are stored in plain text (unguessable, 144+ bits, revocable). No rate-limiting on login or sign-up; no e-mail verification or password reset.
+- Share tokens are stored in plain text (unguessable, 144+ bits, revocable). Login has a small in-memory throttle (10 failures per address+email per 15 minutes; resets on restart, not shared between workers); sign-up has none; no e-mail verification or password reset.
 - No reviewer reminders or expiry; an unavailable reviewer is handled by manual replacement or withdrawal.
 - Contrast was computed for the colour tokens (see below), but no screen-reader or full WCAG audit has been performed, and no Lighthouse run is claimed.
-- SQLite on Render's free plan is ephemeral.
+- SQLite on Render's free plan is ephemeral; with a disk it is a single-instance database (no horizontal scaling, no zero-downtime deploys, whole-disk restore only). A monthly off-platform copy is recommended and its limits are in `docs/OPERATIONS.md`.
+- The commit SHA and repository address are what the author typed; Revisely does not check that they exist or match.
+- Separate accounts do not prove reviewer independence (see above).
 
 ## Accessibility and SEO
 
@@ -171,6 +206,8 @@ Skip link, visible `:focus-visible` outlines, labelled form controls, landmarks,
 - *Why are votes self-loops and APPROVE a system event?* The outcome is a function of the recorded votes and the sealed policy, so nobody can assert "verified" directly; the replay recomputes it.
 - *What stops double votes or lost updates?* A UNIQUE(workflow, round, reviewer) constraint, guards, `BEGIN IMMEDIATE`, and compare-and-swap on state and count.
 - *What if evidence changes?* The digest sealed at submission must match at every vote; changing evidence requires withdrawing, which opens a new round.
+- *Why is REVIEWED not terminal and not a verdict?* Quorum of reports and readiness are different questions. REVIEWED records that the review finished; only the owner's NEW_VERSION leaves it, and replay refuses any verdict event in a review-mode chain.
+- *How is the mode tamper-evident?* It is sealed in the SUBMIT_EVIDENCE meta (absent means the original verification mode), so old chains replay unchanged and a flipped column is reported as MODE_MISMATCH.
 - *Is it secure?* Tamper-evident, role-checked, CSRF-protected, with server-side validation of every reviewer assignment. Reviewer registration is open, so it is not tamper-proof and reviewer identity is not verified.
 
 ## Author

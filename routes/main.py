@@ -34,7 +34,7 @@ def dashboard():
         tasks = conn.execute(
             """
             SELECT t.id, t.title, t.status, t.priority, t.due_date, p.title AS project_title,
-                   w.current_state AS workflow_state, w.round AS workflow_round
+                   w.current_state AS workflow_state, w.round AS workflow_round, w.review_mode
             FROM tasks t
             LEFT JOIN workflow_instances w ON w.task_id = t.id
             LEFT JOIN projects p ON p.id = t.project_id
@@ -47,12 +47,14 @@ def dashboard():
         conn.close()
 
     cards = []
-    counts = {"verified": 0, "in_review": 0, "needs_action": 0, "rejected": 0}
+    counts = {"verified": 0, "in_review": 0, "needs_action": 0, "rejected": 0, "reviewed": 0}
     for task in tasks:
         state_value = task["workflow_state"] or "CREATED"
         state = WorkflowState(state_value)
         if state_value == "VERIFIED":
             counts["verified"] += 1
+        elif state_value == "REVIEWED":
+            counts["reviewed"] += 1
         elif state_value in IN_REVIEW:
             counts["in_review"] += 1
         elif state_value in NEEDS_ACTION:

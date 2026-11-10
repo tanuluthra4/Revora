@@ -24,6 +24,10 @@ ALLOWED = [
     (S.VALIDATING, E.APPROVE, S.VERIFIED),
     (S.VALIDATING, E.REJECT, S.REJECTED),
     (S.REJECTED, E.RESTART, S.IN_PROGRESS),
+    # review mode (Revisely)
+    (S.VALIDATING, E.SUBMIT_REPORT, S.VALIDATING),
+    (S.VALIDATING, E.COMPLETE_REVIEW, S.REVIEWED),
+    (S.REVIEWED, E.NEW_VERSION, S.IN_PROGRESS),
 ]
 
 
@@ -82,7 +86,7 @@ def test_every_event_has_a_required_actor_and_is_used():
 
 def test_events_available_depend_on_role():
     assert set(events_available_to(S.VALIDATING, is_owner=True, is_reviewer=False)) == {E.REASSIGN_REVIEWER, E.WITHDRAW}
-    assert set(events_available_to(S.VALIDATING, is_owner=False, is_reviewer=True)) == {E.VOTE_APPROVE, E.VOTE_REJECT}
+    assert set(events_available_to(S.VALIDATING, is_owner=False, is_reviewer=True)) == {E.VOTE_APPROVE, E.VOTE_REJECT, E.SUBMIT_REPORT}
     # APPROVE / REJECT are fired by the quorum rule, never by a person
     for owner, reviewer in ((True, False), (False, True), (True, True)):
         assert not {E.APPROVE, E.REJECT} & set(events_available_to(S.VALIDATING, owner, reviewer))

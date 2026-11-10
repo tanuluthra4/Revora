@@ -3,10 +3,10 @@
 {% block title %}Sign up{% endblock %}
 {% block body %}
 <main class="narrow">
-    <div class="auth-brand"><b>Proof<span style="color:var(--accent)">-of-Work</span> OS</b></div>
+    <div class="auth-brand"><b>Revisely</b></div>
     <div class="card">
         <span class="pill role">{{ selected_role }}</span>
-        <h2 style="margin-top:8px">Create your {{ selected_role }} account</h2>
+        <h1 class="title-sm" style="margin-top:8px">Create your {{ selected_role }} account</h1>
         <p class="muted small" style="margin-bottom:14px">{% if selected_role == 'reviewer' %}Anyone can join as a reviewer. You will build a public reviewer profile that developers can search, and you review only the evidence assigned to you. Your account alone does not verify your identity or expertise.{% else %}Developers create tasks, attach evidence and ask a reviewer to verify it.{% endif %}</p>
         {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
         <form method="post">

@@ -3,14 +3,14 @@
 {% block title %}{{ "Reviewer login" if selected_role == "reviewer" else "Developer login" }}{% endblock %}
 {% block body %}
 <main class="narrow">
-    <div class="auth-brand"><b>Proof<span style="color:var(--accent)">-of-Work</span> OS</b><p class="muted small">Skills backed by evidence, verified by an automaton.</p></div>
+    <div class="auth-brand"><b>Revisely</b><p class="muted small">Project reviews and improvement, from community reviewers.</p></div>
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
     {% endwith %}
     <div class="card">
         <div class="portal-heading">
             <span class="pill role">{{ selected_role }}</span>
-            <h2>{{ "Reviewer login" if selected_role == "reviewer" else "Developer login" }}</h2>
+            <h1 class="title-sm">{{ "Reviewer login" if selected_role == "reviewer" else "Developer login" }}</h1>
             <p class="muted small">
                 {% if selected_role == "reviewer" %}
                 Sign in to review evidence that developers have sent to you.

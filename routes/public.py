@@ -10,6 +10,7 @@ from database.db import get_db_connection
 from services.evidence_service import EVIDENCE_TYPES
 from services.integrity import verify_chain
 from services.review_service import public_summary
+from services.share_service import resolve
 
 public_bp = Blueprint("public", __name__)
 
@@ -18,26 +19,29 @@ public_bp = Blueprint("public", __name__)
 def proof(token):
     conn = get_db_connection()
     try:
-        row = conn.execute(
-            """
-            SELECT w.id AS workflow_id, w.round, w.current_state, w.completed_at, w.chain_head,
-                   w.required_approvals, w.share_revoked_at,
-                   t.title, t.description, p.title AS project_title, u.username AS owner_name
-            FROM workflow_instances w
-            JOIN tasks t ON t.id = w.task_id
-            JOIN users u ON u.id = w.user_id
-            LEFT JOIN projects p ON p.id = t.project_id
-            WHERE w.share_token = ?
-            """,
-            (token,),
-        ).fetchone()
-        if row is None:
+        status, link = resolve(conn, token, "proof")
+        if status == "unknown":
             abort(404)
+        row = None
+        if link is not None:
+            row = conn.execute(
+                """
+                SELECT w.id AS workflow_id, w.round, w.current_state, w.completed_at, w.chain_head,
+                       w.required_approvals, w.review_mode,
+                       t.title, t.description, p.title AS project_title, u.username AS owner_name
+                FROM workflow_instances w
+                JOIN tasks t ON t.id = w.task_id
+                JOIN users u ON u.id = w.user_id
+                LEFT JOIN projects p ON p.id = t.project_id
+                WHERE w.id = ?
+                """,
+                (link["workflow_id"],),
+            ).fetchone()
 
-        if row["share_revoked_at"]:
+        if status == "revoked":
             # No title, evidence or names: a revoked link exposes nothing.
             return render_template("proof_unavailable.html", reason="revoked"), 410
-        if row["current_state"] != "VERIFIED":
+        if row is None or row["current_state"] != "VERIFIED" or row["review_mode"] == "review":
             return render_template("proof_unavailable.html", reason="not_verified"), 404
 
         evidence = conn.execute(
@@ -85,15 +89,16 @@ def profile(username):
             abort(404)
         proofs = conn.execute(
             """
-            SELECT t.title, w.share_token, w.completed_at, w.required_approvals,
+            SELECT t.title, s.token AS share_token, w.completed_at, w.required_approvals,
                    (SELECT COUNT(*) FROM review_decisions d
                      WHERE d.workflow_id = w.id AND d.round = w.round AND d.decision = 'approve') AS approvals,
                    (SELECT COUNT(*) FROM review_assignments x
                      WHERE x.workflow_id = w.id AND x.round = w.round AND x.status = 'assigned') AS reviewer_count
             FROM workflow_instances w
             JOIN tasks t ON t.id = w.task_id
+            JOIN share_links s ON s.workflow_id = w.id AND s.round = w.round AND s.kind = 'proof'
+                              AND s.revoked_at IS NULL
             WHERE w.user_id = ? AND w.current_state = 'VERIFIED'
-              AND w.share_token IS NOT NULL AND w.share_revoked_at IS NULL
             ORDER BY w.completed_at DESC
             """,
             (owner["id"],),

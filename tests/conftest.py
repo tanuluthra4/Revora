@@ -19,3 +19,11 @@ def app(tmp_path):
         "DATABASE": str(tmp_path / "test.db"),
         "SECRET_KEY": "test-secret",
     })
+
+
+@pytest.fixture(autouse=True)
+def _fresh_login_throttle():
+    from services import login_throttle
+    login_throttle.reset()
+    yield
+    login_throttle.reset()

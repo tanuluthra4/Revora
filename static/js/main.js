@@ -41,3 +41,9 @@ document.addEventListener("submit", function (event) {
     select.addEventListener("change", update);
     update();
 })();
+
+// Select a read-only link box on focus/click so it is easy to copy (no inline handlers: see the CSP).
+document.addEventListener("click", function (event) {
+    var el = event.target;
+    if (el && el.hasAttribute && el.hasAttribute("data-select-on-focus")) el.select();
+});
