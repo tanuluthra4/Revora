@@ -59,7 +59,7 @@ def create_app(test_config=None):
 
     if not app.config["SECRET_KEY"]:
         if app.config["ENV"] == "production":
-            raise RuntimeError("SECRET_KEY must be set when POW_ENV=production.")
+            raise RuntimeError("SECRET_KEY must be set when REVORA_ENV=production.")
         # Development/test only: sessions reset on every restart.
         app.config["SECRET_KEY"] = secrets.token_hex(32)
         log.warning("SECRET_KEY is not set; using a temporary random key.")

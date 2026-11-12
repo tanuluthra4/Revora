@@ -17,7 +17,8 @@
     </div>
     <div class="actions-row">
         {% if is_owner %}{{ post_button(url_for('tasks.delete_task', task_id=task['id']), 'Delete', 'btn btn-danger btn-sm', confirm='Delete this request? Requests that already have reports cannot be deleted.') }}{% endif %}
-        {% if versions|length > 1 or reports %}<a class="btn btn-ghost btn-sm" href="{{ url_for('reviews.progress', task_id=task['id']) }}">Progress across versions</a>{% endif %}
+        {% if versions|length > 1 or reports %}<a class="btn btn-primary btn-sm" href="{{ url_for('reviews.progress', task_id=task['id']) }}">Progress across versions</a>
+        {% else %}<span class="btn btn-ghost btn-sm is-disabled" aria-disabled="true" title="Available after the first report or a second version">Progress across versions</span>{% endif %}
         <a class="btn btn-ghost btn-sm" href="{{ url_for('main.dashboard') if is_owner else url_for('tasks.review_queue') }}">&larr; Back</a>
     </div>
 </div>

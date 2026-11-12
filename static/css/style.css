@@ -370,3 +370,5 @@ ul.plain li { padding: 6px 0; border-top: 1px solid var(--border); }
 form.card > p:first-of-type { margin-bottom: 14px; }
 .radio-row .muted { font-weight: 400; display: inline-block; margin-top: 2px; }
 .radio-row { margin: 10px 0; }
+
+.btn.is-disabled { opacity: .55; cursor: not-allowed; }

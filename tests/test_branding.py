@@ -85,7 +85,7 @@ def test_no_secrets_or_databases_in_the_tree():
     assert ".env" in rules
 
     allowed_runtime_db = os.path.normcase(
-        os.path.join(ROOT, "database", "pow_os.db")
+        os.path.join(ROOT, "database", "revora.db")
     )
 
     for dp, dirs, files in os.walk(ROOT):

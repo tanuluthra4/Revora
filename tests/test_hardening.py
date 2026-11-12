@@ -104,7 +104,7 @@ def test_welcome_role_cards_do_not_share_classes_with_the_directory_cards(app):
     html = Browser(app).get("/").get_data(as_text=True)
     assert "role-author" in html and "role-reviewer" in html
     assert "reviewer-card" not in html and "developer-card" not in html
-    assert "Revisely" not in html and "Revora" in html
+    assert "Revora" in html
 
 
 def test_ui_wording_and_legacy_controls(app):

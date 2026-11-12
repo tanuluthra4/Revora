@@ -1,12 +1,12 @@
 services:
   - type: web
-    name: Revora
+    name: revora
     runtime: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4"
     healthCheckPath: /healthz
     envVars:
-      - key: POW_ENV
+      - key: REVORA_ENV
         value: production
       - key: SECRET_KEY
         generateValue: true
@@ -19,8 +19,8 @@ services:
       # paid web service + persistent disk. Applying it needs the owner's explicit
       # approval; see docs/OPERATIONS.md (staging first, backups, rollback). To use it:
       # - key: DATABASE_PATH
-      #   value: /var/data/pow_os.db
+      #   value: /var/data/revora.db
     # disk:
-    #   name: pow-data
+    #   name: revora-data
     #   mountPath: /var/data
     #   sizeGB: 1

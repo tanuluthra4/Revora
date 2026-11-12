@@ -1,6 +1,6 @@
 # Revora — Audit, Stabilization and Submission Readiness Report
 
-Audited tree: the supplied `proof-of-work-os.zip` (Stage 2 review platform), worked on in an isolated copy. The original project and its database were not modified (SHA-256 of `pow_os.db` checked unchanged before and after). Nothing was committed, pushed or deployed.
+Audited tree: the supplied Stage 2 review platform, worked on in an isolated copy. The original project and its database were not modified (the database file's SHA-256 was checked unchanged before and after). Nothing was committed, pushed or deployed.
 
 ## A. Audit findings
 
@@ -21,13 +21,12 @@ Audited tree: the supplied `proof-of-work-os.zip` (Stage 2 review platform), wor
 Verified as already correct (by reading the code and by tests): transaction helper (`BEGIN IMMEDIATE`, rollback, COMMIT failure, caller-owned transactions); engine check order; owner cannot verify own finding; only the original reviewer can verify; history preserved; invalid transitions rejected; consent enforced server-side; public page excludes private notes, e-mails and session data; revoked link returns 410 with no data; self-review blocked.
 
 ## Post-audit changes (rename and one enhancement)
-* **Rename Revisely -> Revora** in all text, templates, docs, tests and logo filenames (`revora-logo-*`). The logo image is an "R" mark with no wordmark; its bytes are unchanged (the master-hash test still passes). The repository and Render service names are unchanged.
+* **Branding:** the product name is Revora in all text, templates, docs, tests and logo filenames (`revora-logo-*`). The logo image is an "R" mark with no wordmark; its bytes are unchanged (the master-hash test still passes).
 * **New: "Progress across versions"** (`/reviews/<id>/progress`, `services/progress_service.py`, `templates/review_progress.html`, 4 tests). Read-only view for the author and the assigned reviewers: findings per version grouped by recorded status, follow-up links via the existing `prior_finding_id`, and a list of critical/high findings still unresolved. Counts only: no score, grade or badge. A reviewer sees only their own findings; the author sees all; no private notes. No schema change.
 
 * **Landing page:** the two role cards looked different because the directory's `.reviewer-card` CSS class was also applied to the landing card and overrode its border, padding and margin. The landing cards now have their own classes and measure identically (382 px tall, buttons at the same offset, checked in Chromium at 1280 px). Copy was rewritten for Revora, with a principles strip and numbered step cards.
 * **Full UI pass (all pages, 1280 px and 375 px, screenshots reviewed):** mobile header no longer uses a third of the screen (brand and user on one row, navigation scrolls sideways); finding-update form rebuilt as an aligned grid; landing sections share one width, step cards are a clean 5/2/1 grid, footer aligned; login, signup and shared-review pages now carry the logo; user-facing "developer" wording became "author" (the stored role value is unchanged); old verification wording removed from the dashboard, reviewer queue, projects and auth pages; review-request cards no longer show the legacy "Mark done" / "self-reported" controls; reviewer queue showed "None UTC" for an undecided request, now shows a dash.
   **Known cosmetic limits:** some edge labels in the workflow diagram still sit close to node borders; automated tests cover wording and controls, but layout itself was checked by screenshots, not by tests; one test for the "None UTC" fix does not exercise a decided row.
-* **Names deliberately left as `proof-of-work-os` / `pow_os`:** the Render service name, the GitHub repository link and the database filename. Changing them in this tree could create a second Render service with an empty database, break the repository link, or point the app at an empty database. `docs/OPERATIONS.md` explains how to rename each safely, with your approval. This report keeps the word "Revisely" as the record of the rename.
 
 ## B. Change report (relative to the supplied ZIP)
 

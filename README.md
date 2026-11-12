@@ -1,10 +1,10 @@
-# Revora (internal name: Proof-of-Work OS)
+# Revora
 
 **A project review and improvement platform for students and early-career developers.** Authors submit one version of a project, community reviewers write structured reports with findings, authors track and fix those findings, and a follow-up version can be reviewed again. Sharing a review is optional, per version and revocable.
 
-The codebase, repository and Render service keep the internal name *Proof-of-Work OS*. The original evidence-verification workflow is still here, unchanged, for existing records and for tasks created through the old "New task" form.
+The original evidence-verification workflow is still part of the app, unchanged, for existing records and for tasks created through the "New task" form.
 
-The existing live service still runs the previous version under its original service name and address (`proof-of-work-os`); the Revora name is not applied there yet. Nothing in this repository deploys or modifies it. See `docs/OPERATIONS.md` for the staged rollout and rollback.
+Live site: https://revora-414x.onrender.com/ . Nothing in this repository deploys or modifies it. See `docs/OPERATIONS.md` for rollout and rollback.
 
 ## What Revora adds (review mode)
 
@@ -29,7 +29,7 @@ Reviews are community reviews. Verified-expertise claims are deliberately not ma
 ## Problem
 
 Skill lists and task trackers are self-reported: anyone can tick "Completed" or write "I know Flask". Recruiters cannot tell claim from proof.
-The original Proof-of-Work OS makes a claim count only after it passes a **controlled verification lifecycle**: the developer attaches evidence, a *different* person reviews it, and every step is recorded in a tamper-evident log. The lifecycle is enforced by a finite-state machine, not by convention.
+The original verification workflow makes a claim count only after it passes a **controlled verification lifecycle**: the developer attaches evidence, a *different* person reviews it, and every step is recorded in a tamper-evident log. The lifecycle is enforced by a finite-state machine, not by convention.
 
 ## Features
 
@@ -155,9 +155,9 @@ UPDATE state_transitions SET reason = 'edited' WHERE seq = 1;
 
 | Variable | Purpose |
 |---|---|
-| `SECRET_KEY` | Session signing. **Required** when `POW_ENV=production` |
-| `POW_ENV` | `production` enables Secure cookies and the SECRET_KEY check |
-| `DATABASE_PATH` | SQLite file (default `database/pow_os.db`) |
+| `SECRET_KEY` | Session signing. **Required** when `REVORA_ENV=production` |
+| `REVORA_ENV` | `production` enables Secure cookies and the SECRET_KEY check |
+| `DATABASE_PATH` | SQLite file (default `database/revora.db`) |
 | _(removed)_ `REVIEWER_EMAILS`, `REVIEWER_INVITE_CODE`, `REVIEWER_OPEN_SIGNUP` | No longer read. Delete them from the Render dashboard; leaving them set is harmless |
 | `DEFAULT_REQUIRED_APPROVALS` | Pre-filled approvals required in the form (default `2`) |
 | `PUBLIC_BASE_URL` | Optional, e.g. `https://your-service.onrender.com`. Only if set are canonical/`og:url` tags emitted |
@@ -181,7 +181,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider          # ev
 python3 -m pytest -q tests/test_migration5.py                                # migration 5 + backups
 python3 -m pytest -q tests/test_review_engine.py tests/test_review_routes.py # review mode, consent, sharing
 ```
-Tests use temporary databases and never touch `database/pow_os.db`. Migration tests build databases from the real legacy schema (`schema.sql` plus migrations 1-4 and hand-sealed chains). They cover transitions, invalid moves, role/guard enforcement, rollback, concurrency, k-of-n quorum, tamper detection, migrations, open reviewer signup, profiles and privacy, directory and picker, public-page privacy and revocation, SEO headers, HTTP flows, and for review mode: consent bypass by direct POST, report digests, mode guards, finding lifecycle, version locking, per-version sharing and revocation.
+Tests use temporary databases and never touch `database/revora.db`. Migration tests build databases from the real legacy schema (`schema.sql` plus migrations 1-4 and hand-sealed chains). They cover transitions, invalid moves, role/guard enforcement, rollback, concurrency, k-of-n quorum, tamper detection, migrations, open reviewer signup, profiles and privacy, directory and picker, public-page privacy and revocation, SEO headers, HTTP flows, and for review mode: consent bypass by direct POST, report digests, mode guards, finding lifecycle, version locking, per-version sharing and revocation.
 
 ## Deployment (Render)
 

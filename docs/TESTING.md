@@ -4,7 +4,7 @@
 pip install -r requirements-dev.txt          # Flask, Werkzeug, gunicorn, pytest, Pillow
 PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider
 ```
-Tests use temporary databases only and never open `database/pow_os.db`.
+Tests use temporary databases only and never open `database/revora.db`.
 
 Result of the last full run on the audited tree (Python 3.13.16): **395 passed, 0 failed, 0 skipped, 14 warnings** (the warnings come from the image-comparison code in `test_branding.py`).
 

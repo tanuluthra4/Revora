@@ -37,7 +37,7 @@ def to_validating(app, workflow_id, owner_id, reviewer_ids, required=1):
 def finding(**over):
     base = {"severity": "high", "category": "security", "title": "Session cookie lacks Secure flag",
             "explanation": "Cookies are sent over plain HTTP in production.",
-            "suggested_fix": "Set SESSION_COOKIE_SECURE when POW_ENV=production.",
+            "suggested_fix": "Set SESSION_COOKIE_SECURE when REVORA_ENV=production.",
             "reasoning": "Observed in config.py.", "file_path": "config.py", "commit_ref": "",
             "repro_evidence": ""}
     base.update(over)

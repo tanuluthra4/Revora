@@ -3,9 +3,9 @@ import tempfile
 
 # The module-level `app = create_app()` in app.py runs at import time. Point it
 # at a throwaway file so importing it can never touch real development data.
-os.environ["DATABASE_PATH"] = os.path.join(tempfile.mkdtemp(prefix="pow-import-"), "import.db")
+os.environ["DATABASE_PATH"] = os.path.join(tempfile.mkdtemp(prefix="revora-import-"), "import.db")
 os.environ.pop("SECRET_KEY", None)
-os.environ.pop("POW_ENV", None)
+os.environ.pop("REVORA_ENV", None)
 
 import pytest  # noqa: E402
 

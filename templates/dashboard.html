@@ -45,6 +45,7 @@
         </div>
         <div class="foot">
             <a class="btn btn-ghost btn-sm" href="{{ url_for('tasks.task_detail', task_id=task['id']) }}">Open</a>
+            {% if task['review_mode'] == 'review' and task['workflow_round'] > 1 %}<a class="btn btn-ghost btn-sm" href="{{ url_for('reviews.progress', task_id=task['id']) }}">Progress across versions</a>{% endif %}
             {% for event in card.actions %}
                 {% if event.value in ('START', 'REQUEST_EVIDENCE', 'RESTART') %}
                 {{ post_button(url_for('tasks.fire_event', task_id=task['id'], event_name=event.value), event_labels[event], 'btn btn-primary btn-sm', next='dashboard') }}

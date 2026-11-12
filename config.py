@@ -9,13 +9,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_DIR = os.path.join(BASE_DIR, "database")
 
 # Kept for backwards compatibility with code that imports DB_PATH directly.
-DB_PATH = os.getenv("DATABASE_PATH", os.path.join(DATABASE_DIR, "pow_os.db"))
+DB_PATH = os.getenv("DATABASE_PATH", os.path.join(DATABASE_DIR, "revora.db"))
 
 
 
 class Config:
     # "production" turns on Secure cookies and refuses to start without SECRET_KEY.
-    ENV = os.getenv("POW_ENV", "development").lower()
+    ENV = os.getenv("REVORA_ENV", "development").lower()
 
     DATABASE = DB_PATH
     SECRET_KEY = os.getenv("SECRET_KEY") or None
