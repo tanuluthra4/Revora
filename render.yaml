@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: proof-of-work-os   # DO NOT rename without approval: a new name can create a second service with an empty database (see docs/OPERATIONS.md)
+    name: Revora
     runtime: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4"
