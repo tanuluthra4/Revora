@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}{{ owner['username'] }}{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block body %}
 <main class="container" style="max-width:820px">
     <p class="muted small">Revora &middot; public profile</p>
@@ -8,22 +9,36 @@
     <p class="muted">Verified proofs this author chose to share.</p>
     <div class="card" style="margin-top:16px">
         {% if proofs %}
-        <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table class="queue">
-            <thead><tr><th>Verified task</th><th>Approvals</th><th>Date</th></tr></thead>
-            <tbody>
-            {% for item in proofs %}
-            <tr>
-                <td><a href="{{ url_for('public.proof', token=item['share_token']) }}">{{ item['title'] }}</a></td>
-                <td>{{ item['approvals'] }} of {{ item['reviewer_count'] }} reviewers (required {{ item['required_approvals'] }})</td>
-                <td class="muted small">{{ item['completed_at'] }} UTC</td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table></div>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table">
+            <table class="queue">
+                <thead>
+                    <tr>
+                        <th>Verified task</th>
+                        <th>Approvals</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in proofs %}
+                    <tr>
+                        <td><a href="{{ url_for('public.proof', token=item['share_token']) }}">{{ item['title'] }}</a>
+                        </td>
+                        <td>{{ item['approvals'] }} of {{ item['reviewer_count'] }} reviewers (required {{
+                            item['required_approvals'] }})</td>
+                        <td class="muted small">{{ item['completed_at'] }} UTC</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <div class="empty"><h3>No shared proofs</h3><p>This author has not shared any verified proofs yet.</p></div>
+        <div class="empty">
+            <h3>No shared proofs</h3>
+            <p>This author has not shared any verified proofs yet.</p>
+        </div>
         {% endif %}
     </div>
-    <p class="muted small" style="margin-top:12px">Reviewer approvals are from individual accounts and are not organisation certification.</p>
+    <p class="muted small" style="margin-top:12px">Reviewer approvals are from individual accounts and are not
+        organisation certification.</p>
 </main>
 {% endblock %}

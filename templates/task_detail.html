@@ -11,23 +11,28 @@
             <span>Priority: <b>{{ task['priority'] or 'medium' }}</b></span>
             {% if task['due_date'] %}<span>Due: <b>{{ task['due_date'] }}</b></span>{% endif %}
             <span>Self-reported: <b>{{ task['status'] }}</b></span>
-            <span>Approval policy: <b>{% if active_reviewers %}{{ task['required_approvals'] }} of {{ active_reviewers|length }} reviewers{% else %}not set yet{% endif %}</b></span>
+            <span>Approval policy: <b>{% if active_reviewers %}{{ task['required_approvals'] }} of {{
+                    active_reviewers|length }} reviewers{% else %}not set yet{% endif %}</b></span>
             <span>Submission round: <b>{{ current_round }}</b></span>
         </div>
         {% if task['description'] %}<p style="margin-top:10px">{{ task['description'] }}</p>{% endif %}
     </div>
     <div class="actions-row">
         {% if is_owner %}
-            {% if can_edit %}<a class="btn btn-ghost btn-sm" href="{{ url_for('tasks.edit_task', task_id=task['id']) }}">Edit</a>{% endif %}
-            {% if task['status'] == 'Pending' %}{{ post_button(url_for('tasks.complete_task', task_id=task['id']), 'Mark done (self-reported)') }}{% endif %}
-            {% if task['current_state'] != 'VERIFIED' %}{{ post_button(url_for('tasks.delete_task', task_id=task['id']), 'Delete', 'btn btn-danger btn-sm', confirm='Delete this task and its workflow history?') }}{% endif %}
+        {% if can_edit %}<a class="btn btn-ghost btn-sm"
+            href="{{ url_for('tasks.edit_task', task_id=task['id']) }}">Edit</a>{% endif %}
+        {% if task['status'] == 'Pending' %}{{ post_button(url_for('tasks.complete_task', task_id=task['id']), 'Mark
+        done (self-reported)') }}{% endif %}
+        {% if task['current_state'] != 'VERIFIED' %}{{ post_button(url_for('tasks.delete_task', task_id=task['id']),
+        'Delete', 'btn btn-danger btn-sm', confirm='Delete this task and its workflow history?') }}{% endif %}
         {% endif %}
         <a class="btn btn-ghost btn-sm" href="{{ url_for('main.dashboard') }}">&larr; Dashboard</a>
     </div>
 </div>
 
 <section class="card" aria-labelledby="fsm-h">
-    <h2 id="fsm-h">Verification automaton <span class="muted small">&mdash; drawn from the live transition table and this task&rsquo;s stored history</span></h2>
+    <h2 id="fsm-h">Verification automaton <span class="muted small">&mdash; drawn from the live transition table and
+            this task&rsquo;s stored history</span></h2>
     {% include '_fsm.html' %}
 </section>
 
@@ -38,31 +43,43 @@
             <h2 id="act-h">What happens next</h2>
 
             {% if state.value == 'VERIFIED' %}
-                <div class="notice good">Verified{% if task['decided_at'] %} on {{ task['decided_at'] }} UTC{% endif %}. This is a permanent proof record: the automaton has no transition out of VERIFIED.</div>
+            <div class="notice good">Verified{% if task['decided_at'] %} on {{ task['decided_at'] }} UTC{% endif %}.
+                This is a permanent proof record: the automaton has no transition out of VERIFIED.</div>
             {% elif is_owner and state.value == 'CREATED' %}
-                <p class="muted small" style="margin-bottom:10px">Start work when you begin. The workflow cannot skip ahead to review.</p>
+            <p class="muted small" style="margin-bottom:10px">Start work when you begin. The workflow cannot skip ahead
+                to review.</p>
             {% elif is_owner and state.value == 'IN_PROGRESS' %}
-                <p class="muted small" style="margin-bottom:10px">When you have something to show, move to EVIDENCE_REQUIRED to attach proof.</p>
+            <p class="muted small" style="margin-bottom:10px">When you have something to show, move to EVIDENCE_REQUIRED
+                to attach proof.</p>
             {% elif is_owner and state.value == 'EVIDENCE_REQUIRED' %}
-                <p class="muted small" style="margin-bottom:10px">Add evidence items below, choose your reviewers and how many must approve, then submit. Submitted evidence is locked; to change it you must withdraw the submission, which starts a new review round.</p>
+            <p class="muted small" style="margin-bottom:10px">Add evidence items below, choose your reviewers and how
+                many must approve, then submit. Submitted evidence is locked; to change it you must withdraw the
+                submission, which starts a new review round.</p>
             {% elif is_owner and state.value in ('EVIDENCE_SUBMITTED', 'VALIDATING') %}
-                <div class="notice">{{ approvals }} of {{ task['required_approvals'] }} required approvals so far; {{ decided_count }} of {{ total }} reviewers have decided. Evidence is locked while it is under review.</div>
+            <div class="notice">{{ approvals }} of {{ task['required_approvals'] }} required approvals so far; {{
+                decided_count }} of {{ total }} reviewers have decided. Evidence is locked while it is under review.
+            </div>
             {% elif is_owner and state.value == 'REJECTED' %}
-                <div class="notice bad">Rejected: the approval policy can no longer be met. Read the reviewers&rsquo; notes in the panel, then restart to submit corrected evidence as a new round. Earlier rounds stay in the history.</div>
+            <div class="notice bad">Rejected: the approval policy can no longer be met. Read the reviewers&rsquo; notes
+                in the panel, then restart to submit corrected evidence as a new round. Earlier rounds stay in the
+                history.</div>
             {% elif is_reviewer and state.value in ('EVIDENCE_SUBMITTED', 'VALIDATING') %}
-                {% if my_decided %}
-                <div class="notice good">You have recorded your decision. It cannot be changed; the outcome is set by the approval policy.</div>
-                {% else %}
-                <p class="muted small" style="margin-bottom:10px">Review the evidence below. Your decision needs a written note and is recorded under your name. Other reviewers&rsquo; decisions stay hidden until you decide.</p>
-                {% endif %}
+            {% if my_decided %}
+            <div class="notice good">You have recorded your decision. It cannot be changed; the outcome is set by the
+                approval policy.</div>
+            {% else %}
+            <p class="muted small" style="margin-bottom:10px">Review the evidence below. Your decision needs a written
+                note and is recorded under your name. Other reviewers&rsquo; decisions stay hidden until you decide.</p>
+            {% endif %}
             {% endif %}
 
             {% if actions %}
             <div class="action-list" style="margin-top:8px">
                 {% for event in actions %}
-                    {% if event.value not in ('VOTE_APPROVE', 'VOTE_REJECT') %}
-                    {{ post_button(url_for('tasks.fire_event', task_id=task['id'], event_name=event.value), event_labels[event], 'btn btn-primary') }}
-                    {% endif %}
+                {% if event.value not in ('VOTE_APPROVE', 'VOTE_REJECT') %}
+                {{ post_button(url_for('tasks.fire_event', task_id=task['id'], event_name=event.value),
+                event_labels[event], 'btn btn-primary') }}
+                {% endif %}
                 {% endfor %}
             </div>
             {% if 'VOTE_APPROVE' in (actions|map(attribute='value')|list) %}
@@ -72,11 +89,15 @@
                 <textarea id="reason" name="reason" minlength="5" maxlength="2000" required></textarea>
                 <label for="private_notes">Private note (optional; only you can read this)</label>
                 <textarea id="private_notes" name="private_notes" maxlength="2000"></textarea>
-                <label class="check-row"><input type="checkbox" name="note_public" value="1"> Show my decision note on the author&rsquo;s public proof page</label>
-                <p class="hint">By approving you state that the evidence is consistent with the claim. You are not certifying the author&rsquo;s identity, employer or skill level.</p>
+                <label class="check-row"><input type="checkbox" name="note_public" value="1"> Show my decision note on
+                    the author&rsquo;s public proof page</label>
+                <p class="hint">By approving you state that the evidence is consistent with the claim. You are not
+                    certifying the author&rsquo;s identity, employer or skill level.</p>
                 <div class="actions-row">
-                    <button type="submit" class="btn-good" formaction="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='VOTE_APPROVE') }}">Approve</button>
-                    <button type="submit" class="btn-danger" formaction="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='VOTE_REJECT') }}">Reject</button>
+                    <button type="submit" class="btn-good"
+                        formaction="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='VOTE_APPROVE') }}">Approve</button>
+                    <button type="submit" class="btn-danger"
+                        formaction="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='VOTE_REJECT') }}">Reject</button>
                 </div>
             </form>
             {% endif %}
@@ -86,13 +107,20 @@
             {% if is_owner %}
             <details style="margin-top:18px">
                 <summary>Demo: try an action the automaton should refuse</summary>
-                <p class="muted small" style="margin-bottom:10px">These events are not defined from <code>{{ state.value }}</code>. Firing one is refused by the engine and logged under &ldquo;Blocked attempts&rdquo;.</p>
+                <p class="muted small" style="margin-bottom:10px">These events are not defined from
+                    <code>{{ state.value }}</code>. Firing one is refused by the engine and logged under &ldquo;Blocked
+                    attempts&rdquo;.</p>
                 <form method="post" class="actions-row" id="probe-form">
                     {{ csrf() }}
-                    <select name="event_name" id="probe-event" style="width:auto;margin:0" aria-label="Event to attempt">
-                        {% for event in probe_events %}<option value="{{ event.value }}">{{ event.value }}</option>{% endfor %}
+                    <select name="event_name" id="probe-event" style="width:auto;margin:0"
+                        aria-label="Event to attempt">
+                        {% for event in probe_events %}<option value="{{ event.value }}">{{ event.value }}</option>{%
+                        endfor %}
                     </select>
-                    <button type="submit" class="btn-ghost" id="probe-btn" formaction="{{ url_for('tasks.fire_event', task_id=task['id'], event_name=probe_events[0].value if probe_events else 'START') }}" data-base="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='__EVENT__') }}">Attempt it</button>
+                    <button type="submit" class="btn-ghost" id="probe-btn"
+                        formaction="{{ url_for('tasks.fire_event', task_id=task['id'], event_name=probe_events[0].value if probe_events else 'START') }}"
+                        data-base="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='__EVENT__') }}">Attempt
+                        it</button>
                 </form>
             </details>
             {% endif %}
@@ -100,29 +128,36 @@
 
         {% if panel %}
         <section class="card" aria-labelledby="panel-h">
-            <h2 id="panel-h">Reviewers <span class="muted small">&mdash; {{ approvals if decisions_visible else decided_count }}{% if decisions_visible %} approved{% else %} decided{% endif %} / {{ task['required_approvals'] }} required / {{ total }} assigned</span></h2>
+            <h2 id="panel-h">Reviewers <span class="muted small">&mdash; {{ approvals if decisions_visible else
+                    decided_count }}{% if decisions_visible %} approved{% else %} decided{% endif %} / {{
+                    task['required_approvals'] }} required / {{ total }} assigned</span></h2>
             <ul class="panel-list">
                 {% for r in panel %}
                 <li>
                     <b>{{ r['username'] }}</b>{% if r['is_me'] %} (you){% endif %}
                     {% if r['status'] == 'cancelled' %}<span class="pill">replaced</span>
-                    {% elif r['decided'] and r['decision'] %}<span class="pill {{ 'ok' if r['decision'] == 'approve' else 'bad' }}">{{ r['decision'] }}d</span>
+                    {% elif r['decided'] and r['decision'] %}<span
+                        class="pill {{ 'ok' if r['decision'] == 'approve' else 'bad' }}">{{ r['decision'] }}d</span>
                     {% elif r['decided'] %}<span class="pill">decided</span>
                     {% else %}<span class="pill">pending</span>{% endif %}
                     {% if r['at'] %}<span class="muted small">{{ r['at'] }} UTC</span>{% endif %}
-                    {% if r['notes'] %}<div class="reason">{{ r['notes'] }}{% if r['note_public'] %} <span class="muted small">(public)</span>{% endif %}</div>{% endif %}
-                    {% if r['private_notes'] %}<div class="reason muted">Your private note: {{ r['private_notes'] }}</div>{% endif %}
+                    {% if r['notes'] %}<div class="reason">{{ r['notes'] }}{% if r['note_public'] %} <span
+                            class="muted small">(public)</span>{% endif %}</div>{% endif %}
+                    {% if r['private_notes'] %}<div class="reason muted">Your private note: {{ r['private_notes'] }}
+                    </div>{% endif %}
                 </li>
                 {% endfor %}
             </ul>
             {% if can_reassign %}
             <details style="margin-top:12px">
                 <summary>Replace an unavailable reviewer</summary>
-                <form method="post" action="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='REASSIGN_REVIEWER') }}">
+                <form method="post"
+                    action="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='REASSIGN_REVIEWER') }}">
                     {{ csrf() }}
                     <label for="remove">Reviewer to replace</label>
                     <select id="remove" name="remove">
-                        {% for r in active_reviewers if not r['decided'] %}<option value="{{ r['username'] }}">{{ r['username'] }}</option>{% endfor %}
+                        {% for r in active_reviewers if not r['decided'] %}<option value="{{ r['username'] }}">{{
+                            r['username'] }}</option>{% endfor %}
                     </select>
                     <label for="add">Replacement (username or e-mail)</label>
                     <input id="add" type="text" name="add" required>
@@ -134,8 +169,11 @@
             {% endif %}
             {% if can_withdraw %}
             <div style="margin-top:12px">
-                {{ post_button(url_for('tasks.fire_event', task_id=task['id'], event_name='WITHDRAW'), 'Withdraw submission to change evidence', 'btn btn-ghost btn-sm', confirm='Withdraw this submission? Any decisions made so far stay in the history but no longer count; a new review round starts.') }}
-                <p class="hint">Changing evidence invalidates earlier approvals. They remain in the history under the old round.</p>
+                {{ post_button(url_for('tasks.fire_event', task_id=task['id'], event_name='WITHDRAW'), 'Withdraw
+                submission to change evidence', 'btn btn-ghost btn-sm', confirm='Withdraw this submission? Any decisions
+                made so far stay in the history but no longer count; a new review round starts.') }}
+                <p class="hint">Changing evidence invalidates earlier approvals. They remain in the history under the
+                    old round.</p>
             </div>
             {% endif %}
         </section>
@@ -143,23 +181,30 @@
 
         <section class="card" aria-labelledby="ev-h">
             <h2 id="ev-h">Evidence</h2>
-            <div class="notice warn small" style="margin-bottom:12px">Submitted evidence is <b>not</b> verified evidence. A skill is only proven when a reviewer approves and the workflow reaches VERIFIED.</div>
+            <div class="notice warn small" style="margin-bottom:12px">Submitted evidence is <b>not</b> verified
+                evidence. A skill is only proven when a reviewer approves and the workflow reaches VERIFIED.</div>
 
             {% if can_assign %}
             <div style="margin-bottom:18px">
                 <h3>Reviewers</h3>
-                {% if active_reviewers %}<p class="small">Chosen: {% for r in active_reviewers %}<b>{{ r['username'] }}</b>{{ ', ' if not loop.last }}{% endfor %} &mdash; {{ task['required_approvals'] }} of {{ active_reviewers|length }} must approve.</p>{% endif %}
-                <p class="hint">Pick reviewers from the directory by name, skill or experience. Their profiles are self-reported; selecting someone does not guarantee approval.</p>
-                <a class="btn btn-primary btn-sm" href="{{ url_for('reviewers.picker', task_id=task['id']) }}">{{ 'Change reviewers' if active_reviewers else 'Choose reviewers' }}</a>
+                {% if active_reviewers %}<p class="small">Chosen: {% for r in active_reviewers %}<b>{{ r['username']
+                        }}</b>{{ ', ' if not loop.last }}{% endfor %} &mdash; {{ task['required_approvals'] }} of {{
+                    active_reviewers|length }} must approve.</p>{% endif %}
+                <p class="hint">Pick reviewers from the directory by name, skill or experience. Their profiles are
+                    self-reported; selecting someone does not guarantee approval.</p>
+                <a class="btn btn-primary btn-sm" href="{{ url_for('reviewers.picker', task_id=task['id']) }}">{{
+                    'Change reviewers' if active_reviewers else 'Choose reviewers' }}</a>
             </div>
             {% endif %}
 
             {% if can_add_evidence %}
-            <form method="post" action="{{ url_for('tasks.submit_evidence_item', task_id=task['id']) }}" style="margin-bottom:18px">
+            <form method="post" action="{{ url_for('tasks.submit_evidence_item', task_id=task['id']) }}"
+                style="margin-bottom:18px">
                 {{ csrf() }}
                 <label for="evidence_type">Evidence type</label>
                 <select id="evidence_type" name="evidence_type">
-                    {% for key, label in evidence_types.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+                    {% for key, label in evidence_types.items() %}<option value="{{ key }}">{{ label }}</option>{%
+                    endfor %}
                 </select>
                 <div id="url-row">
                     <label for="evidence_url">URL</label>
@@ -175,27 +220,33 @@
             {% endif %}
 
             {% for round_no, items in evidence_by_round.items() %}
-            <div class="round-label">Submission round {{ round_no }}{{ ' (current)' if round_no == current_round }}</div>
+            <div class="round-label">Submission round {{ round_no }}{{ ' (current)' if round_no == current_round }}
+            </div>
             {% for item in items %}
             <div class="evidence-item">
                 <div class="top">
                     <b>{{ item['title'] }}</b>
                     <span>
                         <span class="pill">{{ evidence_types.get(item['evidence_type'], item['evidence_type']) }}</span>
-                        <span class="pill {{ 'ok' if item['verification_status'] == 'approved' else 'bad' if item['verification_status'] == 'rejected' else '' }}">{{ item['verification_status'] }}</span>
+                        <span
+                            class="pill {{ 'ok' if item['verification_status'] == 'approved' else 'bad' if item['verification_status'] == 'rejected' else '' }}">{{
+                            item['verification_status'] }}</span>
                     </span>
                 </div>
-                {% if item['evidence_url'] %}<a href="{{ item['evidence_url'] }}" target="_blank" rel="noopener noreferrer nofollow">{{ item['evidence_url'] }}</a>{% endif %}
+                {% if item['evidence_url'] %}<a href="{{ item['evidence_url'] }}" target="_blank"
+                    rel="noopener noreferrer nofollow">{{ item['evidence_url'] }}</a>{% endif %}
                 {% if item['description'] %}<p>{{ item['description'] }}</p>{% endif %}
                 <div class="small muted" style="margin-top:6px">Added {{ item['created_at'] }} UTC
                     {% if can_add_evidence and item['verification_status'] == 'draft' %}
-                    &middot; {{ post_button(url_for('tasks.remove_evidence_item', task_id=task['id'], evidence_id=item['id']), 'Remove', 'btn btn-danger btn-sm') }}
+                    &middot; {{ post_button(url_for('tasks.remove_evidence_item', task_id=task['id'],
+                    evidence_id=item['id']), 'Remove', 'btn btn-danger btn-sm') }}
                     {% endif %}
                 </div>
             </div>
             {% endfor %}
             {% else %}
-            <p class="muted small">No evidence yet.{% if is_owner and state.value != 'EVIDENCE_REQUIRED' and state.value != 'VERIFIED' %} Evidence can be added once the task reaches EVIDENCE_REQUIRED.{% endif %}</p>
+            <p class="muted small">No evidence yet.{% if is_owner and state.value != 'EVIDENCE_REQUIRED' and state.value
+                != 'VERIFIED' %} Evidence can be added once the task reaches EVIDENCE_REQUIRED.{% endif %}</p>
             {% endfor %}
         </section>
 
@@ -203,12 +254,17 @@
         <section class="card" aria-labelledby="share-h">
             <h2 id="share-h">Share this verified proof</h2>
             {% if share_url %}
-            <p class="small muted" style="margin-bottom:8px">Anyone with this link can view this proof (title, evidence, reviewer usernames and decisions, public notes and integrity check). Put it on your resume or LinkedIn.</p>
+            <p class="small muted" style="margin-bottom:8px">Anyone with this link can view this proof (title, evidence,
+                reviewer usernames and decisions, public notes and integrity check). Put it on your resume or LinkedIn.
+            </p>
             <input type="text" readonly value="{{ share_url }}" data-select-on-focus aria-label="Public proof link">
-            {{ post_button(url_for('tasks.unshare_task', task_id=task['id']), 'Revoke link', 'btn btn-danger btn-sm', confirm='Revoke this link? It stops working immediately.') }}
+            {{ post_button(url_for('tasks.unshare_task', task_id=task['id']), 'Revoke link', 'btn btn-danger btn-sm',
+            confirm='Revoke this link? It stops working immediately.') }}
             {% else %}
-            {% if share_revoked %}<div class="notice warn small" style="margin-bottom:8px">The previous link was revoked and no longer works. Creating a link issues a new one.</div>{% endif %}
-            <p class="small muted" style="margin-bottom:10px">Private by default. Create a public read-only link to show recruiters. You can disable it any time.</p>
+            {% if share_revoked %}<div class="notice warn small" style="margin-bottom:8px">The previous link was revoked
+                and no longer works. Creating a link issues a new one.</div>{% endif %}
+            <p class="small muted" style="margin-bottom:10px">Private by default. Create a public read-only link to show
+                recruiters. You can disable it any time.</p>
             {{ post_button(url_for('tasks.share_task', task_id=task['id']), 'Create public link', 'btn btn-primary') }}
             {% endif %}
         </section>
@@ -217,11 +273,14 @@
         {% if evidence_by_round %}
         <section class="card" aria-labelledby="score-h">
             <h2 id="score-h">Completeness checklist</h2>
-            <p><span class="score">{{ evidence_score.score }}</span><span class="muted"> / {{ evidence_score.max }}</span></p>
-            <p class="muted small" style="margin:4px 0 10px">How complete the evidence package is. This is a reviewer aid &mdash; it is not automated verification and does not measure the quality of the work.</p>
+            <p><span class="score">{{ evidence_score.score }}</span><span class="muted"> / {{ evidence_score.max
+                    }}</span></p>
+            <p class="muted small" style="margin:4px 0 10px">How complete the evidence package is. This is a reviewer
+                aid &mdash; it is not automated verification and does not measure the quality of the work.</p>
             <ul class="checklist">
                 {% for item in evidence_score['items'] %}
-                <li><span><span class="check {{ 'on' if item.met else 'off' }}">{{ '✓' if item.met else '○' }}</span> {{ item.label }}</span><span class="muted">{{ item.points }} pts</span></li>
+                <li><span><span class="check {{ 'on' if item.met else 'off' }}">{{ '✓' if item.met else '○' }}</span> {{
+                        item.label }}</span><span class="muted">{{ item.points }} pts</span></li>
                 {% endfor %}
             </ul>
         </section>
@@ -233,7 +292,10 @@
             <h2 id="audit-h">Audit trail</h2>
             {% if chain.ok %}
             <div class="notice good" style="margin-bottom:14px">
-                {% if chain.length %}<b>Integrity verified.</b> {{ chain.length }} link{{ '' if chain.length == 1 else 's' }} replayed through the automaton and every hash matched; the replayed end state ({{ chain.replayed_state }}) equals the stored state.{% else %}<b>Nothing to verify yet.</b> No transitions have been recorded, so the chain is empty.{% endif %}
+                {% if chain.length %}<b>Integrity verified.</b> {{ chain.length }} link{{ '' if chain.length == 1 else
+                's' }} replayed through the automaton and every hash matched; the replayed end state ({{
+                chain.replayed_state }}) equals the stored state.{% else %}<b>Nothing to verify yet.</b> No transitions
+                have been recorded, so the chain is empty.{% endif %}
             </div>
             {% else %}
             <div class="notice bad" style="margin-bottom:14px">
@@ -245,22 +307,27 @@
             {% if history %}
             <ol class="timeline">
                 {% for h in history|reverse %}
-                <li class="{{ 'verified' if h['to_state'] == 'VERIFIED' else 'rejected' if h['to_state'] == 'REJECTED' }}">
+                <li
+                    class="{{ 'verified' if h['to_state'] == 'VERIFIED' else 'rejected' if h['to_state'] == 'REJECTED' }}">
                     <span class="ev">#{{ h['seq'] }} {{ h['event'] }}</span>
                     <span class="muted small">{{ h['from_state'] }} &rarr; {{ h['to_state'] }}</span>
                     <div class="small muted">
-                        {% if h['actor_role'] == 'legacy' %}recorded before actor tracking{% else %}by {{ h['actor_name'] or 'unknown' }} ({{ h['actor_role'] }}){% endif %}
+                        {% if h['actor_role'] == 'legacy' %}recorded before actor tracking{% else %}by {{
+                        h['actor_name'] or 'unknown' }} ({{ h['actor_role'] }}){% endif %}
                         &middot; {{ h['created_at'] }} UTC
                     </div>
                     {% if h['reason'] %}<div class="reason">{{ h['reason'] }}</div>{% endif %}
-                    <div class="hash" title="hash {{ h['hash'] }}&#10;prev {{ h['prev_hash'] }}">hash {{ h['hash'][:12] }}&hellip; &larr; {{ h['prev_hash'][:8] }}&hellip;{% if h['evidence_digest'] %} &middot; evidence seal {{ h['evidence_digest'][:10] }}&hellip;{% endif %}</div>
+                    <div class="hash" title="hash {{ h['hash'] }}&#10;prev {{ h['prev_hash'] }}">hash {{ h['hash'][:12]
+                        }}&hellip; &larr; {{ h['prev_hash'][:8] }}&hellip;{% if h['evidence_digest'] %} &middot;
+                        evidence seal {{ h['evidence_digest'][:10] }}&hellip;{% endif %}</div>
                 </li>
                 {% endfor %}
             </ol>
             {% else %}
             <p class="muted small">No transitions yet. The first one will start the hash chain.</p>
             {% endif %}
-            <p class="muted small" style="margin-top:8px">Each link commits to the one before it, so editing history breaks the chain. This is tamper-<i>evident</i>, not tamper-proof.</p>
+            <p class="muted small" style="margin-top:8px">Each link commits to the one before it, so editing history
+                breaks the chain. This is tamper-<i>evident</i>, not tamper-proof.</p>
         </section>
 
         {% if is_owner %}
@@ -269,9 +336,11 @@
             {% if blocked %}
             <ul class="blocked-list">
                 {% for b in blocked %}
-                <li><span class="pill bad">{{ b['code'] }}</span> <b class="mono">{{ b['event'] }}</b> in {{ b['from_state'] }}
+                <li><span class="pill bad">{{ b['code'] }}</span> <b class="mono">{{ b['event'] }}</b> in {{
+                    b['from_state'] }}
                     <div class="muted">{{ b['message'] }}</div>
-                    <div class="muted small">{{ b['actor_name'] or 'unknown' }} &middot; {{ b['created_at'] }} UTC</div></li>
+                    <div class="muted small">{{ b['actor_name'] or 'unknown' }} &middot; {{ b['created_at'] }} UTC</div>
+                </li>
                 {% endfor %}
             </ul>
             {% else %}

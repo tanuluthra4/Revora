@@ -3,7 +3,7 @@
 {% macro state_pill(state, label=None) %}<span class="pill state-{{ state }}">{{ label or state }}</span>{% endmacro %}
 
 {% macro post_button(url, label, css='btn btn-ghost btn-sm', confirm=None, next=None, reason=None) %}
-<form method="post" action="{{ url }}" class="inline"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}>
+<form method="post" action="{{ url }}" class="inline" {% if confirm %} data-confirm="{{ confirm }}" {% endif %}>
     {{ csrf() }}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     {% if reason %}<input type="hidden" name="reason" value="{{ reason }}">{% endif %}

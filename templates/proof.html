@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Verified proof: {{ proof['title'] }}{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
 <div style="max-width:820px;margin:0 auto">
     <p class="muted small">Revora &middot; public proof page (original verification)</p>
@@ -16,37 +17,49 @@
         {% if proof['description'] %}<p style="margin-top:12px">{{ proof['description'] }}</p>{% endif %}
 
         <h2 style="margin-top:20px">Reviewer approvals</h2>
-        <p><span class="score">{{ approvals }}</span><span class="muted"> of {{ assigned }} assigned reviewers approved (policy required {{ required }}).</span></p>
+        <p><span class="score">{{ approvals }}</span><span class="muted"> of {{ assigned }} assigned reviewers approved
+                (policy required {{ required }}).</span></p>
         <ul class="panel-list">
             {% for r in reviewers %}
             <li><b>{{ r['username'] }}</b>
-                {% if r['decision'] %}<span class="pill {{ 'ok' if r['decision'] == 'approve' else 'bad' }}">{{ r['decision'] }}d</span>{% else %}<span class="pill">no decision</span>{% endif %}
+                {% if r['decision'] %}<span class="pill {{ 'ok' if r['decision'] == 'approve' else 'bad' }}">{{
+                    r['decision'] }}d</span>{% else %}<span class="pill">no decision</span>{% endif %}
                 {% if r['created_at'] %}<span class="muted small">{{ r['created_at'] }} UTC</span>{% endif %}
                 {% if r['public_note'] %}<div class="reason">{{ r['public_note'] }}</div>{% endif %}
             </li>
             {% endfor %}
         </ul>
 
-        <div class="notice warn small" style="margin-top:12px"><b>Independent reviewer approval is not organisation certification.</b> The reviewers are individual accounts. Their identity, employer and expertise are not verified by Revora, and several approvals do not make them an organisation. Judge how much you trust the named reviewers.</div>
+        <div class="notice warn small" style="margin-top:12px"><b>Independent reviewer approval is not organisation
+                certification.</b> The reviewers are individual accounts. Their identity, employer and expertise are not
+            verified by Revora, and several approvals do not make them an organisation. Judge how much you trust the
+            named reviewers.</div>
 
         <h2 style="margin-top:20px">Evidence reviewed</h2>
         {% for item in evidence %}
         <div class="evidence-item">
-            <div class="top"><b>{{ item['title'] }}</b><span class="pill">{{ evidence_types.get(item['evidence_type'], item['evidence_type']) }}</span></div>
-            {% if item['evidence_url'] %}<a href="{{ item['evidence_url'] }}" target="_blank" rel="noopener noreferrer nofollow">{{ item['evidence_url'] }}</a>{% endif %}
+            <div class="top"><b>{{ item['title'] }}</b><span class="pill">{{ evidence_types.get(item['evidence_type'],
+                    item['evidence_type']) }}</span></div>
+            {% if item['evidence_url'] %}<a href="{{ item['evidence_url'] }}" target="_blank"
+                rel="noopener noreferrer nofollow">{{ item['evidence_url'] }}</a>{% endif %}
             {% if item['description'] %}<p>{{ item['description'] }}</p>{% endif %}
         </div>
         {% endfor %}
 
         <h2 style="margin-top:20px">Record integrity</h2>
         {% if chain.ok %}
-        <div class="notice good">The decision history was replayed through the verification automaton and every hash matched.
-            <div class="hash" style="margin-top:6px">chain head {{ proof['chain_head'] }}</div></div>
+        <div class="notice good">The decision history was replayed through the verification automaton and every hash
+            matched.
+            <div class="hash" style="margin-top:6px">chain head {{ proof['chain_head'] }}</div>
+        </div>
         {% else %}
         <div class="notice bad"><b>This record failed its integrity check.</b> Do not rely on it.</div>
         {% endif %}
 
-        <p class="muted small" style="margin-top:18px">The integrity check is tamper-<i>evident</i>, not tamper-proof: it shows the history was not altered after the fact, but not who the reviewers are, and the evidence links point to content the developer controls. The completeness checklist used during review is not proof of authorship.</p>
+        <p class="muted small" style="margin-top:18px">The integrity check is tamper-<i>evident</i>, not tamper-proof:
+            it shows the history was not altered after the fact, but not who the reviewers are, and the evidence links
+            point to content the developer controls. The completeness checklist used during review is not proof of
+            authorship.</p>
     </div>
 </div>
 {% endblock %}

@@ -1,8 +1,10 @@
 {% if pages > 1 %}
 <nav class="pager" aria-label="Pagination">
     {% set args = {'q': filters.q, 'skill': filters.skill, 'expertise': filters.expertise, 'level': filters.level} %}
-    {% if page > 1 %}<a class="btn btn-ghost btn-sm" href="{{ pager_url(page - 1) }}" rel="prev">&larr; Previous</a>{% endif %}
+    {% if page > 1 %}<a class="btn btn-ghost btn-sm" href="{{ pager_url(page - 1) }}" rel="prev">&larr; Previous</a>{%
+    endif %}
     <span class="muted small">Page {{ page }} of {{ pages }}</span>
-    {% if page < pages %}<a class="btn btn-ghost btn-sm" href="{{ pager_url(page + 1) }}" rel="next">Next &rarr;</a>{% endif %}
+    {% if page < pages %}<a class="btn btn-ghost btn-sm" href="{{ pager_url(page + 1) }}" rel="next">Next &rarr;</a>{%
+        endif %}
 </nav>
 {% endif %}

@@ -1,27 +1,32 @@
 <div class="fsm-wrap">
-<svg class="fsm" viewBox="0 0 {{ fsm.width }} {{ fsm.height }}" role="img" aria-label="Verification automaton. Current state: {{ state_label }}">
-    <defs>
-        {% for name, color in (('traversed', 'var(--accent)'), ('available', 'var(--good)'), ('waiting', 'var(--warn)'), ('idle', 'var(--border)')) %}
-        <marker id="arrow-{{ name }}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 z" fill="{{ color }}"/>
-        </marker>
+    <svg class="fsm" viewBox="0 0 {{ fsm.width }} {{ fsm.height }}" role="img"
+        aria-label="Verification automaton. Current state: {{ state_label }}">
+        <defs>
+            {% for name, color in (('traversed', 'var(--accent)'), ('available', 'var(--good)'), ('waiting',
+            'var(--warn)'), ('idle', 'var(--border)')) %}
+            <marker id="arrow-{{ name }}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+                orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="{{ color }}" />
+            </marker>
+            {% endfor %}
+        </defs>
+        {% for edge in fsm.edges %}
+        <g class="edge {{ edge.status }}">
+            <title>{{ edge.from }} --{{ edge.event }}--> {{ edge.to }} (fired by {{ edge.actor }})</title>
+            <path d="{{ edge.path }}" fill="none" marker-end="url(#arrow-{{ edge.status }})" />
+            <text x="{{ edge.lx }}" y="{{ edge.ly }}" text-anchor="{{ edge.anchor }}">{% for line in edge.lines %}<tspan
+                    x="{{ edge.lx }}" dy="{{ 0 if loop.first else 12 }}">{{ line }}</tspan>{% endfor %}</text>
+        </g>
         {% endfor %}
-    </defs>
-    {% for edge in fsm.edges %}
-    <g class="edge {{ edge.status }}">
-        <title>{{ edge.from }} --{{ edge.event }}--> {{ edge.to }} (fired by {{ edge.actor }})</title>
-        <path d="{{ edge.path }}" fill="none" marker-end="url(#arrow-{{ edge.status }})"/>
-        <text x="{{ edge.lx }}" y="{{ edge.ly }}" text-anchor="{{ edge.anchor }}">{% for line in edge.lines %}<tspan x="{{ edge.lx }}" dy="{{ 0 if loop.first else 12 }}">{{ line }}</tspan>{% endfor %}</text>
-    </g>
-    {% endfor %}
-    {% for node in fsm.nodes %}
-    <g class="node {{ node.kind }} {{ 'visited' if node.visited }} {{ 'current' if node.current }} {{ 'accepting' if node.name == 'VERIFIED' }}">
-        <title>{{ node.name }}{{ ' (current state)' if node.current }}</title>
-        <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ fsm.node_w }}" height="{{ fsm.node_h }}" rx="10"/>
-        <text x="{{ node.cx }}" y="{{ node.cy + 4 }}">{{ node.label }}</text>
-    </g>
-    {% endfor %}
-</svg>
+        {% for node in fsm.nodes %}
+        <g
+            class="node {{ node.kind }} {{ 'visited' if node.visited }} {{ 'current' if node.current }} {{ 'accepting' if node.name == 'VERIFIED' }}">
+            <title>{{ node.name }}{{ ' (current state)' if node.current }}</title>
+            <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ fsm.node_w }}" height="{{ fsm.node_h }}" rx="10" />
+            <text x="{{ node.cx }}" y="{{ node.cy + 4 }}">{{ node.label }}</text>
+        </g>
+        {% endfor %}
+    </svg>
 </div>
 <div class="legend">
     <span><i class="l-trav"></i>transition already taken</span>

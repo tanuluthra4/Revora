@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% from '_report.html' import report_body, finding_head %}
 {% block title %}Community review: {{ version['project_title'] }}{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
 <div style="max-width:860px;margin:0 auto">
-    <p class="public-brand"><img src="{{ url_for('static', filename='brand/header-48.png') }}" width="28" height="28" alt=""><b>Revora</b><span class="muted small">shared community review</span></p>
+    <p class="public-brand"><img src="{{ url_for('static', filename='brand/header-48.png') }}" width="28" height="28"
+            alt=""><b>Revora</b><span class="muted small">shared community review</span></p>
     <div class="card">
         <h1>{{ version['project_title'] }}</h1>
         <div class="kv">
@@ -14,20 +16,29 @@
             <span>Commit: <b class="mono">{{ version['commit_sha'] }}</b></span>
             <span>Stack: <b>{{ version['tech_stack'] }}</b></span>
         </div>
-        <p class="small" style="margin-top:8px">Repository: <a href="{{ version['repo_url'] }}" target="_blank" rel="noopener noreferrer nofollow">{{ version['repo_url'] }}</a></p>
-        <div class="notice warn small" style="margin-top:12px"><b>Not a certification.</b> {{ disclaimer }} The author chose to share this version. It shows every non-private part of the reports and all findings, including unresolved and critical ones.</div>
-        {% if not chain.ok %}<div class="notice bad" style="margin-top:12px"><b>This record failed its integrity check.</b> Do not rely on it.</div>{% endif %}
+        <p class="small" style="margin-top:8px">Repository: <a href="{{ version['repo_url'] }}" target="_blank"
+                rel="noopener noreferrer nofollow">{{ version['repo_url'] }}</a></p>
+        <div class="notice warn small" style="margin-top:12px"><b>Not a certification.</b> {{ disclaimer }} The author
+            chose to share this version. It shows every non-private part of the reports and all findings, including
+            unresolved and critical ones.</div>
+        {% if not chain.ok %}<div class="notice bad" style="margin-top:12px"><b>This record failed its integrity
+                check.</b> Do not rely on it.</div>{% endif %}
     </div>
 
     {% for r in reports %}
     <section class="card" aria-labelledby="rep-{{ r['id'] }}">
         <h2 id="rep-{{ r['id'] }}">Report by {{ r['username'] }}</h2>
-        <p class="muted small">Community reviewer &middot; background self-reported and not verified{% if r['profile_public'] %} &middot; <a href="{{ url_for('reviewers.public_profile', username=r['username']) }}">reviewer profile</a>{% endif %} &middot; submitted {{ r['created_at'] }} UTC</p>
+        <p class="muted small">Community reviewer &middot; background self-reported and not verified{% if
+            r['profile_public'] %} &middot; <a
+                href="{{ url_for('reviewers.public_profile', username=r['username']) }}">reviewer profile</a>{% endif %}
+            &middot; submitted {{ r['created_at'] }} UTC</p>
         {{ report_body(r) }}
         <h3 style="margin-top:16px">Findings ({{ r['findings']|length }})</h3>
-        {% for f in r['findings'] %}<div class="finding">{{ finding_head(f) }}</div>{% else %}<p class="muted">This reviewer recorded no findings.</p>{% endfor %}
+        {% for f in r['findings'] %}<div class="finding">{{ finding_head(f) }}</div>{% else %}<p class="muted">This
+            reviewer recorded no findings.</p>{% endfor %}
     </section>
     {% endfor %}
-    <p class="muted small" style="margin-top:14px">Finding status is what the author and reviewer last recorded; it can change after this page was shared. The record is tamper-evident, not tamper-proof.</p>
+    <p class="muted small" style="margin-top:14px">Finding status is what the author and reviewer last recorded; it can
+        change after this page was shared. The record is tamper-evident, not tamper-proof.</p>
 </div>
 {% endblock %}

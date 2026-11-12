@@ -3,7 +3,11 @@
 {% block title %}{{ "Reviewer login" if selected_role == "reviewer" else "Author login" }}{% endblock %}
 {% block body %}
 <main class="narrow">
-    <div class="auth-brand"><a href="{{ url_for('main.home') }}" aria-label="Revora home"><img src="{{ url_for('static', filename='brand/revora-logo-96.png') }}" width="48" height="48" alt="" class="auth-logo"></a><b>Revora</b><p class="muted small">Project reviews, tracked until they are fixed.</p></div>
+    <div class="auth-brand"><a href="{{ url_for('main.home') }}" aria-label="Revora home"><img
+                src="{{ url_for('static', filename='brand/revora-logo-96.png') }}" width="48" height="48" alt=""
+                class="auth-logo"></a><b>Revora</b>
+        <p class="muted small">Project reviews, tracked until they are fixed.</p>
+    </div>
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
     {% endwith %}
@@ -29,8 +33,11 @@
             <input id="password" type="password" name="password" required autocomplete="current-password">
             <button type="submit" class="btn-primary btn-block">Log in</button>
         </form>
-        <p class="small muted" style="margin-top:16px">No account? <a href="{{ url_for('auth.signup', role=selected_role) }}">Create {{ 'an author' if selected_role == 'developer' else 'a reviewer' }} account</a></p>
-        <p class="small muted" style="margin-top:10px"><a href="{{ url_for('main.home') }}">← Back to role selection</a></p>
+        <p class="small muted" style="margin-top:16px">No account? <a
+                href="{{ url_for('auth.signup', role=selected_role) }}">Create {{ 'an author' if selected_role ==
+                'developer' else 'a reviewer' }} account</a></p>
+        <p class="small muted" style="margin-top:10px"><a href="{{ url_for('main.home') }}">← Back to role selection</a>
+        </p>
     </div>
 </main>
 {% endblock %}

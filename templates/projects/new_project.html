@@ -14,7 +14,8 @@
 
         <label for="status">Status</label>
         <select id="status" name="status">
-            {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if form.get('status') == s }}>{{ s }}</option>{% endfor %}
+            {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if form.get('status')==s }}>{{ s }}</option>{%
+            endfor %}
         </select>
 
         <label for="start_date">Start date</label>

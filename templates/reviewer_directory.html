@@ -2,25 +2,40 @@
 {% from '_reviewer_macros.html' import card, trust_note %}
 {% block title %}Find reviewers{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Find reviewers</h1>
-<p>Reviewers who chose to be listed. Anyone can register as a reviewer, so judge each profile yourself.</p></div></div>
+<div class="page-head">
+    <div>
+        <h1>Find reviewers</h1>
+        <p>Reviewers who chose to be listed. Anyone can register as a reviewer, so judge each profile yourself.</p>
+    </div>
+</div>
 {{ trust_note() }}
 <form method="get" class="card filter-form" role="search" aria-label="Search reviewers">
     <div class="filter-grid">
-        <div><label for="q">Name</label><input id="q" type="search" name="q" value="{{ filters.q }}" maxlength="60"></div>
-        <div><label for="skill">Skill</label><input id="skill" type="search" name="skill" value="{{ filters.skill }}" maxlength="30" placeholder="e.g. flask"></div>
-        <div><label for="expertise">Area of expertise</label><input id="expertise" type="search" name="expertise" value="{{ filters.expertise }}" maxlength="30" placeholder="e.g. security"></div>
+        <div><label for="q">Name</label><input id="q" type="search" name="q" value="{{ filters.q }}" maxlength="60">
+        </div>
+        <div><label for="skill">Skill</label><input id="skill" type="search" name="skill" value="{{ filters.skill }}"
+                maxlength="30" placeholder="e.g. flask"></div>
+        <div><label for="expertise">Area of expertise</label><input id="expertise" type="search" name="expertise"
+                value="{{ filters.expertise }}" maxlength="30" placeholder="e.g. security"></div>
         <div><label for="level">Experience (self-reported)</label>
-            <select id="level" name="level"><option value="">Any</option>
-            {% for key, label in levels.items() %}<option value="{{ key }}" {{ 'selected' if filters.level == key }}>{{ label }}</option>{% endfor %}</select></div>
+            <select id="level" name="level">
+                <option value="">Any</option>
+                {% for key, label in levels.items() %}<option value="{{ key }}" {{ 'selected' if filters.level==key }}>
+                    {{ label }}</option>{% endfor %}
+            </select>
+        </div>
     </div>
     <button type="submit" class="btn-primary">Search</button>
     <a class="btn btn-ghost" href="{{ url_for('reviewers.directory') }}">Clear filters</a>
 </form>
-<p role="status" class="muted small">{{ total }} reviewer{{ '' if total == 1 else 's' }} found{% if pages > 1 %} · page {{ page }} of {{ pages }}{% endif %}</p>
+<p role="status" class="muted small">{{ total }} reviewer{{ '' if total == 1 else 's' }} found{% if pages > 1 %} · page
+    {{ page }} of {{ pages }}{% endif %}</p>
 {% for item in items %}{{ card(item) }}
 {% else %}
-<div class="card empty"><h3>No reviewers match</h3><p>Try fewer filters. Reviewers appear here only after they create a profile and choose to be listed.</p></div>
+<div class="card empty">
+    <h3>No reviewers match</h3>
+    <p>Try fewer filters. Reviewers appear here only after they create a profile and choose to be listed.</p>
+</div>
 {% endfor %}
 {% include '_pager.html' %}
 {% endblock %}

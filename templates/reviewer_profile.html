@@ -1,29 +1,45 @@
 {% extends 'base.html' %}
 {% from '_reviewer_macros.html' import tags, trust_note %}
 {% block title %}{{ profile.display_name }} - reviewer{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
 <div style="max-width:820px;margin:0 auto">
-<p class="muted small">Revora &middot; reviewer profile{% if preview %} (preview of what others see){% endif %}</p>
-<div class="card">
-    <h1>{{ profile.display_name }} <span class="muted small">@{{ profile.username }}</span></h1>
-    {% if profile.headline %}<p>{{ profile.headline }}</p>{% endif %}
-    {{ trust_note() }}
-    {% if profile.bio %}<h2 style="margin-top:16px">About <span class="pill">self-reported</span></h2><p class="prewrap">{{ profile.bio }}</p>{% endif %}
-    {{ tags(profile.skills, 'Skills (self-reported)') }}
-    {{ tags(profile.expertise, 'Areas of expertise (self-reported)') }}
-    {% if profile.level_label %}<p><span class="muted">Experience level (self-reported):</span> <b>{{ profile.level_label }}</b></p>{% endif %}
-    {% if profile.work_history %}<h2 style="margin-top:16px">Projects and work history <span class="pill">self-reported</span></h2><p class="prewrap">{{ profile.work_history }}</p>{% endif %}
-    {% if profile.education %}<h2 style="margin-top:16px">Education and certifications <span class="pill">self-reported, not verified</span></h2><p class="prewrap">{{ profile.education }}</p>{% endif %}
-    {% if profile.links %}<h2 style="margin-top:16px">Links</h2><ul>
-        {% for key, url in profile.links.items() %}<li><a href="{{ url }}" target="_blank" rel="noopener noreferrer nofollow ugc">{{ {'github_url': 'GitHub', 'portfolio_url': 'Portfolio', 'linkedin_url': 'Professional profile'}[key] }}</a> <span class="muted small">{{ url }}</span></li>{% endfor %}</ul>{% endif %}
+    <p class="muted small">Revora &middot; reviewer profile{% if preview %} (preview of what others see){% endif %}</p>
+    <div class="card">
+        <h1>{{ profile.display_name }} <span class="muted small">@{{ profile.username }}</span></h1>
+        {% if profile.headline %}<p>{{ profile.headline }}</p>{% endif %}
+        {{ trust_note() }}
+        {% if profile.bio %}<h2 style="margin-top:16px">About <span class="pill">self-reported</span></h2>
+        <p class="prewrap">{{ profile.bio }}</p>{% endif %}
+        {{ tags(profile.skills, 'Skills (self-reported)') }}
+        {{ tags(profile.expertise, 'Areas of expertise (self-reported)') }}
+        {% if profile.level_label %}<p><span class="muted">Experience level (self-reported):</span> <b>{{
+                profile.level_label }}</b></p>{% endif %}
+        {% if profile.work_history %}<h2 style="margin-top:16px">Projects and work history <span
+                class="pill">self-reported</span></h2>
+        <p class="prewrap">{{ profile.work_history }}</p>{% endif %}
+        {% if profile.education %}<h2 style="margin-top:16px">Education and certifications <span
+                class="pill">self-reported, not verified</span></h2>
+        <p class="prewrap">{{ profile.education }}</p>{% endif %}
+        {% if profile.links %}<h2 style="margin-top:16px">Links</h2>
+        <ul>
+            {% for key, url in profile.links.items() %}<li><a href="{{ url }}" target="_blank"
+                    rel="noopener noreferrer nofollow ugc">{{ {'github_url': 'GitHub', 'portfolio_url': 'Portfolio',
+                    'linkedin_url': 'Professional profile'}[key] }}</a> <span class="muted small">{{ url }}</span></li>
+            {% endfor %}</ul>{% endif %}
 
-    <h2 style="margin-top:16px">Platform record</h2>
-    <ul class="small">
-        <li>Account created: {{ profile.member_since }}</li>
-        <li>Review decisions recorded on this platform: <b>{{ profile.stats.decisions }}</b> across {{ profile.stats.submissions }} submission{{ '' if profile.stats.submissions == 1 else 's' }}.</li>
-        <li>Profile completeness: {{ profile.completeness }}% (how many fields are filled, not a measure of quality).</li>
-    </ul>
-    <p class="muted small">These counts come from the platform's database. They are not ratings, endorsements or a reputation score, and the submissions themselves stay private. Identity, employer, certifications and skills are <b>not</b> verified by the platform.</p>
-</div></div>
+        <h2 style="margin-top:16px">Platform record</h2>
+        <ul class="small">
+            <li>Account created: {{ profile.member_since }}</li>
+            <li>Review decisions recorded on this platform: <b>{{ profile.stats.decisions }}</b> across {{
+                profile.stats.submissions }} submission{{ '' if profile.stats.submissions == 1 else 's' }}.</li>
+            <li>Profile completeness: {{ profile.completeness }}% (how many fields are filled, not a measure of
+                quality).</li>
+        </ul>
+        <p class="muted small">These counts come from the platform's database. They are not ratings, endorsements or a
+            reputation score, and the submissions themselves stay private. Identity, employer, certifications and skills
+            are <b>not</b> verified by the platform.</p>
+    </div>
+</div>
 {% endblock %}

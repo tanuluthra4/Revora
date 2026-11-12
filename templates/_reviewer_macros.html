@@ -1,21 +1,30 @@
 {% macro tags(items, label) %}
-{% if items %}<p class="small"><span class="muted">{{ label }}:</span> {% for t in items %}<span class="pill">{{ t }}</span> {% endfor %}</p>{% endif %}
+{% if items %}<p class="small"><span class="muted">{{ label }}:</span> {% for t in items %}<span class="pill">{{ t
+        }}</span> {% endfor %}</p>{% endif %}
 {% endmacro %}
 
 {% macro trust_note() %}
-<p class="muted small trust-note">Skills, experience and links below are <b>self-reported</b>. Revora has not verified any reviewer's identity, employer, certifications or expertise. Check the links yourself.</p>
+<p class="muted small trust-note">Skills, experience and links below are <b>self-reported</b>. Revora has not verified
+    any reviewer's identity, employer, certifications or expertise. Check the links yourself.</p>
 {% endmacro %}
 
 {% macro card(item, show_stats=true) %}
 <div class="reviewer-card">
     <h3><a href="{{ url_for('reviewers.public_profile', username=item.username) }}">{{ item.display_name }}</a>
-        <span class="muted small">@{{ item.username }}</span></h3>
+        <span class="muted small">@{{ item.username }}</span>
+    </h3>
     {% if item.headline %}<p>{{ item.headline }}</p>{% endif %}
     {{ tags(item.skills, 'Skills (self-reported)') }}
     {{ tags(item.expertise, 'Expertise (self-reported)') }}
-    {% if item.level_label %}<p class="small"><span class="muted">Experience (self-reported):</span> {{ item.level_label }}</p>{% endif %}
-    {% if item.work_history %}<p class="small clamp"><span class="muted">Work:</span> {{ item.work_history[:180] }}{{ '…' if item.work_history|length > 180 }}</p>{% endif %}
-    {% if item.links %}<p class="small">{% for key, url in item.links.items() %}<a href="{{ url }}" target="_blank" rel="noopener noreferrer nofollow ugc">{{ {'github_url': 'GitHub', 'portfolio_url': 'Portfolio', 'linkedin_url': 'Professional profile'}[key] }}</a>{{ ' · ' if not loop.last }}{% endfor %}</p>{% endif %}
-    <p class="small muted">Profile completeness: {{ item.completeness }}% (fields filled, not a quality score){% if show_stats %} · Platform record: {{ item.stats.decisions }} review decision{{ '' if item.stats.decisions == 1 else 's' }} recorded{% endif %}</p>
+    {% if item.level_label %}<p class="small"><span class="muted">Experience (self-reported):</span> {{ item.level_label
+        }}</p>{% endif %}
+    {% if item.work_history %}<p class="small clamp"><span class="muted">Work:</span> {{ item.work_history[:180] }}{{
+        '…' if item.work_history|length > 180 }}</p>{% endif %}
+    {% if item.links %}<p class="small">{% for key, url in item.links.items() %}<a href="{{ url }}" target="_blank"
+            rel="noopener noreferrer nofollow ugc">{{ {'github_url': 'GitHub', 'portfolio_url': 'Portfolio',
+            'linkedin_url': 'Professional profile'}[key] }}</a>{{ ' · ' if not loop.last }}{% endfor %}</p>{% endif %}
+    <p class="small muted">Profile completeness: {{ item.completeness }}% (fields filled, not a quality score){% if
+        show_stats %} · Platform record: {{ item.stats.decisions }} review decision{{ '' if item.stats.decisions == 1
+        else 's' }} recorded{% endif %}</p>
 </div>
 {% endmacro %}

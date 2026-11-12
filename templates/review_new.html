@@ -4,42 +4,56 @@
 {% block content %}
 <div class="card" style="max-width:720px;margin:0 auto">
     <h1>Request a review</h1>
-    <p class="muted" style="margin:4px 0 20px">Describe one version of one project. Community reviewers you choose will read it and write structured feedback. Reviewers are individuals with self-reported backgrounds; Revora has not verified their expertise.</p>
+    <p class="muted" style="margin:4px 0 20px">Describe one version of one project. Community reviewers you choose will
+        read it and write structured feedback. Reviewers are individuals with self-reported backgrounds; Revora has not
+        verified their expertise.</p>
     {% if not projects %}
-    <div class="notice warn" style="margin-top:12px">A review is always about one of your projects. <a href="{{ url_for('projects.projects') }}">Add a project first</a>, then come back.</div>
+    <div class="notice warn" style="margin-top:12px">A review is always about one of your projects. <a
+            href="{{ url_for('projects.projects') }}">Add a project first</a>, then come back.</div>
     {% else %}
     <form method="post">
         {{ csrf() }}
         <label for="project_id">Project</label>
         <select id="project_id" name="project_id" required>
             <option value="">Choose a project</option>
-            {% for p in projects %}<option value="{{ p['id'] }}" {{ 'selected' if form.get('project_id')|string == p['id']|string }}>{{ p['title'] }}</option>{% endfor %}
+            {% for p in projects %}<option value="{{ p['id'] }}" {{ 'selected' if
+                form.get('project_id')|string==p['id']|string }}>{{ p['title'] }}</option>{% endfor %}
         </select>
 
         <label for="title">Request title</label>
-        <input id="title" name="title" type="text" required maxlength="200" value="{{ form.get('title', '') }}" placeholder="e.g. Auth and data layer, first pass">
+        <input id="title" name="title" type="text" required maxlength="200" value="{{ form.get('title', '') }}"
+            placeholder="e.g. Auth and data layer, first pass">
 
         <fieldset>
             <legend>What do you want from this review?</legend>
             {% for key, label in goals.items() %}
-            <label class="radio-row"><input type="radio" name="review_goal" value="{{ key }}" {{ 'checked' if form.get('review_goal', 'production') == key }} required>
-                <span><b>{{ label }}</b><br><span class="muted small">{% if key == 'production' %}Is this ready to run for real users? Reviewers look for security, reliability and maintainability gaps.{% else %}Could I explain and defend this in an interview? Reviewers add questions you may be asked.{% endif %}</span></span></label>
+            <label class="radio-row"><input type="radio" name="review_goal" value="{{ key }}" {{ 'checked' if
+                    form.get('review_goal', 'production' )==key }} required>
+                <span><b>{{ label }}</b><br><span class="muted small">{% if key == 'production' %}Is this ready to run
+                        for real users? Reviewers look for security, reliability and maintainability gaps.{% else
+                        %}Could I explain and defend this in an interview? Reviewers add questions you may be asked.{%
+                        endif %}</span></span></label>
             {% endfor %}
         </fieldset>
 
         <label for="repo_url">Repository address</label>
-        <input id="repo_url" name="repo_url" type="url" required maxlength="300" value="{{ form.get('repo_url', '') }}" placeholder="https://github.com/you/project">
-        <label for="commit_sha">Commit SHA to review</label>
-        <input id="commit_sha" name="commit_sha" type="text" required maxlength="40" pattern="[0-9a-fA-F]{7,40}" value="{{ form.get('commit_sha', '') }}" placeholder="7-40 hexadecimal characters">
+        <input id="repo_url" name="repo_url" type="url" required maxlength="300" value="{{ form.get('repo_url', '') }}"
+            placeholder="https://github.com/you/project">
+        <label for="commit_sha">Commit SHA to review (optional)</label>
+        <input id="commit_sha" name="commit_sha" type="text" maxlength="40" pattern="[0-9a-fA-F]{7,40}"
+            value="{{ form.get('commit_sha', '') }}" placeholder="7-40 hexadecimal characters">
         <label for="demo_url">Demo address (optional)</label>
         <input id="demo_url" name="demo_url" type="url" maxlength="300" value="{{ form.get('demo_url', '') }}">
         <label for="tech_stack">Tech stack</label>
-        <input id="tech_stack" name="tech_stack" type="text" required maxlength="300" value="{{ form.get('tech_stack', '') }}" placeholder="e.g. Python, Flask, SQLite">
+        <input id="tech_stack" name="tech_stack" type="text" required maxlength="300"
+            value="{{ form.get('tech_stack', '') }}" placeholder="e.g. Python, Flask, SQLite">
         <label for="questions">What should reviewers look at? (optional)</label>
         <textarea id="questions" name="questions" maxlength="2000">{{ form.get('questions', '') }}</textarea>
-        <p class="hint">Use a repository reviewers can open. Revora never fetches or runs your code and never needs a password or access token: do not paste one.</p>
+        <p class="hint">Use a repository reviewers can open. Revora never fetches or runs your code and never needs a
+            password or access token: do not paste one.</p>
         <div class="actions-row"><button type="submit" class="btn-primary">Create request</button>
-            <a class="btn btn-ghost" href="{{ url_for('main.dashboard') }}">Cancel</a></div>
+            <a class="btn btn-ghost" href="{{ url_for('main.dashboard') }}">Cancel</a>
+        </div>
     </form>
     {% endif %}
 </div>

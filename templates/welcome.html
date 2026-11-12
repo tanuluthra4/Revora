@@ -1,11 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}Get your project reviewed{% endblock %}
-{% block meta %}<meta name="description" content="Revora is a project review and improvement platform for students and early-career developers. Submit one version of a project, get structured feedback from community reviewers, fix what they find, and share the review if you choose to.">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Revora">
-    <meta property="og:description" content="Structured project reviews from community reviewers, for students and early-career developers. Sharing is optional and revocable.">
-    {% if config.PUBLIC_BASE_URL %}<link rel="canonical" href="{{ config.PUBLIC_BASE_URL }}/">
-    <meta property="og:url" content="{{ config.PUBLIC_BASE_URL }}/">{% endif %}{% endblock %}
+{% block meta %}
+<meta name="description"
+    content="Revora is a project review and improvement platform for students and early-career developers. Submit one version of a project, get structured feedback from community reviewers, fix what they find, and share the review if you choose to.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Revora">
+<meta property="og:description"
+    content="Structured project reviews from community reviewers, for students and early-career developers. Sharing is optional and revocable.">
+{% if config.PUBLIC_BASE_URL %}
+<link rel="canonical" href="{{ config.PUBLIC_BASE_URL }}/">
+<meta property="og:url" content="{{ config.PUBLIC_BASE_URL }}/">{% endif %}{% endblock %}
 {% block body %}
 <nav class="landing-nav" aria-label="Page sections">
     <a href="#how-it-works">How it works</a>
@@ -16,10 +20,14 @@
 </nav>
 <main class="welcome-page" id="main">
     <div class="welcome-brand">
-        <img class="welcome-logo" src="{{ url_for('static', filename='brand/revora-logo-256.png') }}" srcset="{{ url_for('static', filename='brand/revora-logo-512.png') }} 2x" width="96" height="96" alt="Revora logo">
+        <img class="welcome-logo" src="{{ url_for('static', filename='brand/revora-logo-256.png') }}"
+            srcset="{{ url_for('static', filename='brand/revora-logo-512.png') }} 2x" width="96" height="96"
+            alt="Revora logo">
         <p class="eyebrow">REVORA</p>
         <h1>Review it. <span>Revise it.</span></h1>
-        <p class="welcome-copy">Revora is where a project gets a careful second pair of eyes. Authors share one version, reviewers write structured findings, and every finding is tracked until it is fixed and checked. Built for students and early-career developers.</p>
+        <p class="welcome-copy">Revora is where a project gets a careful second pair of eyes. Authors share one version,
+            reviewers write structured findings, and every finding is tracked until it is fixed and checked. Built for
+            students and early-career developers.</p>
     </div>
 
     <section class="role-grid" aria-label="Choose how to sign in">
@@ -27,25 +35,33 @@
             <div class="role-icon" aria-hidden="true">&lt;/&gt;</div>
             <p class="eyebrow">FOR AUTHORS</p>
             <h2>I want a review</h2>
-            <p class="role-desc">Share one version of a project, pick reviewers from the directory, read their reports, and follow each finding until it is fixed and checked.</p>
-            <a class="btn btn-primary btn-block" href="{{ url_for('auth.login', role='developer') }}">Continue as author <span aria-hidden="true">&rarr;</span></a>
-            <p class="role-footnote">New here? <a href="{{ url_for('auth.signup', role='developer') }}">Create an author account</a></p>
+            <p class="role-desc">Share one version of a project, pick reviewers from the directory, read their reports,
+                and follow each finding until it is fixed and checked.</p>
+            <a class="btn btn-primary btn-block" href="{{ url_for('auth.login', role='developer') }}">Continue as author
+                <span aria-hidden="true">&rarr;</span></a>
+            <p class="role-footnote">New here? <a href="{{ url_for('auth.signup', role='developer') }}">Create an author
+                    account</a></p>
         </article>
 
         <article class="role-card role-reviewer">
             <div class="role-icon" aria-hidden="true">&#10003;</div>
             <p class="eyebrow">FOR REVIEWERS</p>
             <h2>I want to review</h2>
-            <p class="role-desc">Open to everyone. Set up a profile, get found by authors, and write structured reports with clear findings and suggested fixes.</p>
-            <a class="btn btn-reviewer btn-block" href="{{ url_for('auth.login', role='reviewer') }}">Continue as reviewer <span aria-hidden="true">&rarr;</span></a>
-            <p class="role-footnote">New here? <a href="{{ url_for('auth.signup', role='reviewer') }}">Create a reviewer account</a></p>
+            <p class="role-desc">Open to everyone. Set up a profile, get found by authors, and write structured reports
+                with clear findings and suggested fixes.</p>
+            <a class="btn btn-reviewer btn-block" href="{{ url_for('auth.login', role='reviewer') }}">Continue as
+                reviewer <span aria-hidden="true">&rarr;</span></a>
+            <p class="role-footnote">New here? <a href="{{ url_for('auth.signup', role='reviewer') }}">Create a reviewer
+                    account</a></p>
         </article>
     </section>
 
     <ul class="trust-strip" aria-label="Principles">
-        <li><b>Your code is never run</b><span>Revora reads what you describe; it never fetches or executes code.</span></li>
+        <li><b>Your code is never run</b><span>Revora reads what you describe; it never fetches or executes code.</span>
+        </li>
         <li><b>Sharing is your choice</b><span>Private by default. Share one version, revoke it any time.</span></li>
-        <li><b>Opinions, not certificates</b><span>A review is one person&rsquo;s written view, not an endorsement.</span></li>
+        <li><b>Opinions, not certificates</b><span>A review is one person&rsquo;s written view, not an
+                endorsement.</span></li>
     </ul>
 
     <p class="welcome-security">Your role is fixed when you create the account and is checked on every request.</p>
@@ -54,36 +70,83 @@
 <section class="info-section" id="how-it-works" aria-labelledby="how-h">
     <h2 id="how-h">How it works</h2>
     <ol class="steps step-cards">
-        <li><b>Describe a version</b><span>Pick a project and give the repository address, commit, tech stack and what you want looked at. No passwords or tokens are ever needed.</span></li>
-        <li><b>Choose reviewers</b><span>Pick one to five reviewers from the directory and decide how many reports you need.</span></li>
-        <li><b>Read the reports</b><span>Each report states what was and was not assessed, lists strengths, and gives findings with severity, explanation and a suggested fix.</span></li>
-        <li><b>Fix and verify</b><span>Move each finding from open to in progress to fixed. Only the original reviewer can mark it resolved.</span></li>
-        <li><b>Follow up or share</b><span>Start a new version for another round, and see progress across versions. Sharing a version is optional and revocable.</span></li>
+        <li><b>Describe a version</b><span>Pick a project and give the repository address, commit, tech stack and what
+                you want looked at. No passwords or tokens are ever needed.</span></li>
+        <li><b>Choose reviewers</b><span>Pick one to five reviewers from the directory and decide how many reports you
+                need.</span></li>
+        <li><b>Read the reports</b><span>Each report states what was and was not assessed, lists strengths, and gives
+                findings with severity, explanation and a suggested fix.</span></li>
+        <li><b>Fix and verify</b><span>Move each finding from open to in progress to fixed. Only the original reviewer
+                can mark it resolved.</span></li>
+        <li><b>Follow up or share</b><span>Start a new version for another round, and see progress across versions.
+                Sharing a version is optional and revocable.</span></li>
     </ol>
 </section>
 
 <section class="info-section" id="goals" aria-labelledby="goals-h">
     <h2 id="goals-h">Two review goals</h2>
     <div class="goal-grid">
-        <div class="card"><h3>Production readiness</h3><p>Reviewers look for security, correctness, reliability, performance, testing and deployment gaps, and say what they found and what they did not check.</p></div>
-        <div class="card"><h3>Interview preparation</h3><p>Reviewers look at how well you could explain and defend the project, point out gaps in depth, and suggest questions an interviewer might ask.</p></div>
+        <div class="card">
+            <h3>Production readiness</h3>
+            <p>Reviewers look for security, correctness, reliability, performance, testing and deployment gaps, and say
+                what they found and what they did not check.</p>
+        </div>
+        <div class="card">
+            <h3>Interview preparation</h3>
+            <p>Reviewers look at how well you could explain and defend the project, point out gaps in depth, and suggest
+                questions an interviewer might ask.</p>
+        </div>
     </div>
 </section>
 
 <section class="info-section" id="trust" aria-labelledby="trust-h">
     <h2 id="trust-h">What a review is, and is not</h2>
-    <p>A review is a written opinion from an individual community reviewer about one commit. It is <b>not a certification, an endorsement or a guarantee</b>, and a completed review does not mean a project is ready. Reviewers&rsquo; skills, experience and links are self-reported and Revora has not verified any of them. Separate accounts do not prove that reviewers are independent of the author, and Revora cannot tell whether one person controls several accounts.</p>
+    <p>A review is a written opinion from an individual community reviewer about one commit. It is <b>not a
+            certification, an endorsement or a guarantee</b>, and a completed review does not mean a project is ready.
+        Reviewers&rsquo; skills, experience and links are self-reported and Revora has not verified any of them.
+        Separate accounts do not prove that reviewers are independent of the author, and Revora cannot tell whether one
+        person controls several accounts.</p>
 </section>
 
 <section class="info-section faq" id="faq" aria-labelledby="faq-h">
     <h2 id="faq-h">FAQ</h2>
-    <details><summary>Who can be a reviewer?</summary><p>Anyone can create a reviewer account and profile. Everything on a profile is self-reported; the platform verifies none of it. Check a reviewer&rsquo;s links before choosing them.</p></details>
-    <details><summary>Does &ldquo;review complete&rdquo; mean my project is ready?</summary><p>No. It only records that the number of reports you asked for has been submitted. Read the findings, including critical and unresolved ones.</p></details>
-    <details><summary>Who can see my reviews?</summary><p>Only you and the reviewers you assigned, until you create a public link for one version. A shared page shows that version&rsquo;s non-private report text and all of its findings. It never shows reviewers&rsquo; private notes, e-mail addresses, your questions or your other projects. You can revoke a link at any time and sharing again creates a new link.</p></details>
-    <details><summary>What do reviewers agree to?</summary><p>Before a reviewer submits a report they must tick a statement that the author may publish the report&rsquo;s non-private text and findings if the author chooses to share it. A report cannot be submitted without it.</p></details>
-    <details><summary>Can I review my own project?</summary><p>No. The same account can never review its own work. Someone who controls two accounts could still try to, and Revora cannot detect that.</p></details>
-    <details><summary>What about the earlier verified proofs?</summary><p>They stay exactly as they were, including their history and public links.</p></details>
-    <details><summary>Is the record tamper-proof?</summary><p>No, it is tamper-evident. Anyone with database access could rewrite it and its hashes together; the check detects ordinary edits and inconsistencies.</p></details>
+    <details>
+        <summary>Who can be a reviewer?</summary>
+        <p>Anyone can create a reviewer account and profile. Everything on a profile is self-reported; the platform
+            verifies none of it. Check a reviewer&rsquo;s links before choosing them.</p>
+    </details>
+    <details>
+        <summary>Does &ldquo;review complete&rdquo; mean my project is ready?</summary>
+        <p>No. It only records that the number of reports you asked for has been submitted. Read the findings, including
+            critical and unresolved ones.</p>
+    </details>
+    <details>
+        <summary>Who can see my reviews?</summary>
+        <p>Only you and the reviewers you assigned, until you create a public link for one version. A shared page shows
+            that version&rsquo;s non-private report text and all of its findings. It never shows reviewers&rsquo;
+            private notes, e-mail addresses, your questions or your other projects. You can revoke a link at any time
+            and sharing again creates a new link.</p>
+    </details>
+    <details>
+        <summary>What do reviewers agree to?</summary>
+        <p>Before a reviewer submits a report they must tick a statement that the author may publish the report&rsquo;s
+            non-private text and findings if the author chooses to share it. A report cannot be submitted without it.
+        </p>
+    </details>
+    <details>
+        <summary>Can I review my own project?</summary>
+        <p>No. The same account can never review its own work. Someone who controls two accounts could still try to, and
+            Revora cannot detect that.</p>
+    </details>
+    <details>
+        <summary>What about the earlier verified proofs?</summary>
+        <p>They stay exactly as they were, including their history and public links.</p>
+    </details>
+    <details>
+        <summary>Is the record tamper-proof?</summary>
+        <p>No, it is tamper-evident. Anyone with database access could rewrite it and its hashes together; the check
+            detects ordinary edits and inconsistencies.</p>
+    </details>
 </section>
 
 <footer class="site-footer">

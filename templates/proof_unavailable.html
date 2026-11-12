@@ -1,9 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}Proof unavailable{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
 <div class="card narrow-card">
     <h1>{% if reason == 'revoked' %}This link has been revoked{% else %}This proof is not verified{% endif %}</h1>
-    <p>{% if reason == 'revoked' %}The author turned off sharing for this proof. Nothing is shown here.{% else %}This link does not point to a verified proof, so nothing is shown. A proof counts as verified only when the required number of reviewers have approved it.{% endif %}</p>
+    <p>{% if reason == 'revoked' %}The author turned off sharing for this proof. Nothing is shown here.{% else %}This
+        link does not point to a verified proof, so nothing is shown. A proof counts as verified only when the required
+        number of reviewers have approved it.{% endif %}</p>
 </div>
 {% endblock %}

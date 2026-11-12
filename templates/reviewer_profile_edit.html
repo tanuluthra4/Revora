@@ -2,50 +2,76 @@
 {% from '_macros.html' import csrf %}
 {% block title %}My reviewer profile{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>My reviewer profile</h1>
-<p>Authors use this to decide whom to ask. Everything you write is shown as <b>self-reported</b>; the platform verifies none of it.</p></div>
-<div class="actions-row">{% if form.profile_visibility != 'private' %}<a class="btn btn-ghost btn-sm" href="{{ url_for('reviewers.public_profile', username=profile.username) }}">View public page</a>{% endif %}</div></div>
+<div class="page-head">
+    <div>
+        <h1>My reviewer profile</h1>
+        <p>Authors use this to decide whom to ask. Everything you write is shown as <b>self-reported</b>; the platform
+            verifies none of it.</p>
+    </div>
+    <div class="actions-row">{% if form.profile_visibility != 'private' %}<a class="btn btn-ghost btn-sm"
+            href="{{ url_for('reviewers.public_profile', username=profile.username) }}">View public page</a>{% endif %}
+    </div>
+</div>
 
-<div class="card" aria-labelledby="comp-h"><h2 id="comp-h">Profile completeness: {{ profile.completeness }}%</h2>
-<progress value="{{ profile.completeness }}" max="100" aria-label="Profile completeness">{{ profile.completeness }}%</progress>
-<p class="muted small">{% if profile.missing %}Still empty: {{ profile.missing|join(', ') }}.{% else %}All fields are filled.{% endif %} This counts filled fields only; it says nothing about quality or trustworthiness.</p>
-<p class="muted small">Platform record (derived from real data): {{ stats.decisions }} review decision{{ '' if stats.decisions == 1 else 's' }} recorded.</p></div>
+<div class="card" aria-labelledby="comp-h">
+    <h2 id="comp-h">Profile completeness: {{ profile.completeness }}%</h2>
+    <progress value="{{ profile.completeness }}" max="100" aria-label="Profile completeness">{{ profile.completeness
+        }}%</progress>
+    <p class="muted small">{% if profile.missing %}Still empty: {{ profile.missing|join(', ') }}.{% else %}All fields
+        are filled.{% endif %} This counts filled fields only; it says nothing about quality or trustworthiness.</p>
+    <p class="muted small">Platform record (derived from real data): {{ stats.decisions }} review decision{{ '' if
+        stats.decisions == 1 else 's' }} recorded.</p>
+</div>
 
 <form method="post" class="card" novalidate>
     {{ csrf() }}
     <label for="display_name">Display name</label>
-    <input id="display_name" name="display_name" required minlength="2" maxlength="60" value="{{ form.get('display_name', '') }}">
+    <input id="display_name" name="display_name" required minlength="2" maxlength="60"
+        value="{{ form.get('display_name', '') }}">
     <label for="headline">Headline (optional)</label>
-    <input id="headline" name="headline" maxlength="100" value="{{ form.get('headline', '') }}" placeholder="e.g. Backend engineer, Python and databases">
+    <input id="headline" name="headline" maxlength="100" value="{{ form.get('headline', '') }}"
+        placeholder="e.g. Backend engineer, Python and databases">
     <label for="bio">Short bio</label>
     <textarea id="bio" name="bio" maxlength="600">{{ form.get('bio', '') }}</textarea>
     <label for="skills">Technical skills and technologies <span class="muted">(comma-separated, up to 15)</span></label>
     <input id="skills" name="skills" value="{{ form.get('skills', '') }}" placeholder="Python, Flask, SQL">
     <label for="expertise">Areas of expertise <span class="muted">(comma-separated)</span></label>
-    <input id="expertise" name="expertise" value="{{ form.get('expertise', '') }}" placeholder="API design, security reviews">
+    <input id="expertise" name="expertise" value="{{ form.get('expertise', '') }}"
+        placeholder="API design, security reviews">
     <label for="experience_level">Experience level (self-reported)</label>
-    <select id="experience_level" name="experience_level"><option value="">Prefer not to say</option>
-        {% for key, label in levels.items() %}<option value="{{ key }}" {{ 'selected' if form.get('experience_level') == key }}>{{ label }}</option>{% endfor %}</select>
+    <select id="experience_level" name="experience_level">
+        <option value="">Prefer not to say</option>
+        {% for key, label in levels.items() %}<option value="{{ key }}" {{ 'selected' if
+            form.get('experience_level')==key }}>{{ label }}</option>{% endfor %}
+    </select>
     <label for="work_history">Relevant projects and work history</label>
     <textarea id="work_history" name="work_history" maxlength="2000">{{ form.get('work_history', '') }}</textarea>
     <label for="education">Education or certifications (optional)</label>
     <textarea id="education" name="education" maxlength="600">{{ form.get('education', '') }}</textarea>
     <label for="github_url">GitHub link</label>
-    <input id="github_url" type="url" name="github_url" maxlength="300" value="{{ form.get('github_url', '') }}" placeholder="https://github.com/you">
+    <input id="github_url" type="url" name="github_url" maxlength="300" value="{{ form.get('github_url', '') }}"
+        placeholder="https://github.com/you">
     <label for="portfolio_url">Portfolio link</label>
-    <input id="portfolio_url" type="url" name="portfolio_url" maxlength="300" value="{{ form.get('portfolio_url', '') }}">
+    <input id="portfolio_url" type="url" name="portfolio_url" maxlength="300"
+        value="{{ form.get('portfolio_url', '') }}">
     <label for="linkedin_url">Other professional link</label>
     <input id="linkedin_url" type="url" name="linkedin_url" maxlength="300" value="{{ form.get('linkedin_url', '') }}">
 
-    <fieldset><legend>Who can see my profile</legend>
+    <fieldset>
+        <legend>Who can see my profile</legend>
         {% for key, label in visibilities.items() %}
-        <label class="check-row"><input type="radio" name="profile_visibility" value="{{ key }}" {{ 'checked' if form.get('profile_visibility', 'private') == key }}> {{ label }}</label>
+        <label class="check-row"><input type="radio" name="profile_visibility" value="{{ key }}" {{ 'checked' if
+                form.get('profile_visibility', 'private' )==key }}> {{ label }}</label>
         {% endfor %}
-        <p class="hint">Your e-mail address is never shown. Display name, headline, skills and expertise are shown on any non-private profile.</p>
+        <p class="hint">Your e-mail address is never shown. Display name, headline, skills and expertise are shown on
+            any non-private profile.</p>
     </fieldset>
-    <fieldset><legend>Optional details shown publicly</legend>
-        {% for flag, label in (('pub_bio','Bio'),('pub_experience','Experience level'),('pub_work','Projects and work history'),('pub_education','Education and certifications'),('pub_links','Links')) %}
-        <label class="check-row"><input type="checkbox" name="{{ flag }}" value="1" {{ 'checked' if form.get(flag, '1') == '1' }}> {{ label }}</label>
+    <fieldset>
+        <legend>Optional details shown publicly</legend>
+        {% for flag, label in (('pub_bio','Bio'),('pub_experience','Experience level'),('pub_work','Projects and work
+        history'),('pub_education','Education and certifications'),('pub_links','Links')) %}
+        <label class="check-row"><input type="checkbox" name="{{ flag }}" value="1" {{ 'checked' if form.get(flag, '1'
+                )=='1' }}> {{ label }}</label>
         {% endfor %}
     </fieldset>
     <button type="submit" class="btn-primary">Save profile</button>
