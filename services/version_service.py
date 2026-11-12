@@ -1,7 +1,7 @@
 """Review requests and their versions.
 
 A review request is a task + workflow in review mode; each round of that
-workflow is one *version* (`submission_versions`). Revisely never fetches a
+workflow is one *version* (`submission_versions`). Revora never fetches a
 repository, never runs submitted code and never asks for repository
 credentials: it records a URL and a commit SHA that the owner typed, and the
 reviewers look at them on their own.
@@ -44,7 +44,7 @@ def validate_version(form):
         problems.append("Questions can be at most 2000 characters.")
     for text in (repo, demo or "", stack, questions or ""):
         if _SECRET.search(text):
-            problems.append("That looks like a secret (token or key). Revisely never needs one: "
+            problems.append("That looks like a secret (token or key). Revora never needs one: "
                             "remove it, and revoke it if it was real.")
             break
     if problems:

@@ -4,7 +4,7 @@
 {% block content %}
 <div class="card" style="max-width:720px;margin:0 auto">
     <h1>Request a review</h1>
-    <p class="muted">Describe one version of one project. Community reviewers you choose will read it and write structured feedback. Reviewers are individuals with self-reported backgrounds; Revisely has not verified their expertise.</p>
+    <p class="muted" style="margin:4px 0 20px">Describe one version of one project. Community reviewers you choose will read it and write structured feedback. Reviewers are individuals with self-reported backgrounds; Revora has not verified their expertise.</p>
     {% if not projects %}
     <div class="notice warn" style="margin-top:12px">A review is always about one of your projects. <a href="{{ url_for('projects.projects') }}">Add a project first</a>, then come back.</div>
     {% else %}
@@ -37,7 +37,7 @@
         <input id="tech_stack" name="tech_stack" type="text" required maxlength="300" value="{{ form.get('tech_stack', '') }}" placeholder="e.g. Python, Flask, SQLite">
         <label for="questions">What should reviewers look at? (optional)</label>
         <textarea id="questions" name="questions" maxlength="2000">{{ form.get('questions', '') }}</textarea>
-        <p class="hint">Use a repository reviewers can open. Revisely never fetches or runs your code and never needs a password or access token: do not paste one.</p>
+        <p class="hint">Use a repository reviewers can open. Revora never fetches or runs your code and never needs a password or access token: do not paste one.</p>
         <div class="actions-row"><button type="submit" class="btn-primary">Create request</button>
             <a class="btn btn-ghost" href="{{ url_for('main.dashboard') }}">Cancel</a></div>
     </form>

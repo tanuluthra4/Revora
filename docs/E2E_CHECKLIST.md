@@ -2,7 +2,7 @@
 
 Setup: `python app.py` with a fresh `DATABASE_PATH`. Use three browsers/profiles: **Author** (A), **Reviewer 1** (R1), **Reviewer 2** (R2), plus a logged-out window (L).
 
-1. L: open `/`. Landing says Revisely, shows the logo, two review goals, "not a certification", FAQ. No dead links.
+1. L: open `/`. Landing says Revora, shows the logo, two review goals, "not a certification", FAQ. No dead links.
 2. Sign up R1 and R2 as reviewers; in each profile set visibility to *listed*. Sign up A as author; add a project.
 3. A: **Request a review** with an empty project, a bad SHA, and a URL containing `user:pass@`: each is refused with a clear message. Then create it properly (goal *production*).
 4. A: Start, continue, **Choose reviewers** (R1 and R2, 2 required), submit. The version shows *locked*; editing it is refused.

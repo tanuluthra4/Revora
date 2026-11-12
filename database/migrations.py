@@ -324,7 +324,7 @@ def _migration_4(conn):
 
 
 def _migration_5(conn):
-    """Revisely: versioned review requests, structured reports, findings, share links.
+    """Revora: versioned review requests, structured reports, findings, share links.
 
     Additive only. Nothing is dropped; no existing row is rewritten. Every
     workflow that exists now keeps review_mode = 'verification' and finishes

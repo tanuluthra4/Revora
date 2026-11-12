@@ -13,16 +13,16 @@ MASTER_SHA256 = "978871e06ede5857232f403f3d2802e47a42317f0f08bcbdfab77a0494970af
 
 
 def test_logo_master_is_byte_identical_to_the_supplied_file():
-    data = open(os.path.join(BRAND, "revisely-logo-original.png"), "rb").read()
+    data = open(os.path.join(BRAND, "revora-logo-original.png"), "rb").read()
     assert hashlib.sha256(data).hexdigest() == MASTER_SHA256
     assert len(data) == 1131966
 
 
 def test_every_derivative_is_a_square_downscale_of_the_master():
-    master = Image.open(os.path.join(BRAND, "revisely-logo-original.png")).convert("RGB")
+    master = Image.open(os.path.join(BRAND, "revora-logo-original.png")).convert("RGB")
     assert master.size == (1254, 1254)
     for name in os.listdir(BRAND):
-        if name == "revisely-logo-original.png" or not name.endswith(".png"):
+        if name == "revora-logo-original.png" or not name.endswith(".png"):
             continue
         im = Image.open(os.path.join(BRAND, name)).convert("RGB")
         assert im.size[0] == im.size[1] < 1254, name                      # proportional, smaller
@@ -33,7 +33,7 @@ def test_every_derivative_is_a_square_downscale_of_the_master():
 
 def test_pages_reference_the_brand_icons(app):
     html = Browser(app).get("/").get_data(as_text=True)
-    for f in ("brand/favicon-32.png", "brand/apple-touch-icon.png", "brand/revisely-logo-256.png"):
+    for f in ("brand/favicon-32.png", "brand/apple-touch-icon.png", "brand/revora-logo-256.png"):
         assert f in html
         assert Browser(app).get("/static/" + f).status_code == 200
     assert Browser(app).get("/favicon.ico").status_code == 200

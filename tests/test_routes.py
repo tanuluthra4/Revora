@@ -138,7 +138,7 @@ def test_home_page_offers_separate_role_portals(app):
     response = b.get("/")
     html = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert "I want a review" in html      # landing copy rewritten for Revisely
+    assert "I want a review" in html      # landing copy rewritten for Revora
     assert "I want to review" in html
     assert "/login?role=developer" in html
     assert "/login?role=reviewer" in html
@@ -391,7 +391,7 @@ def test_dashboard_shows_each_tasks_own_state_without_creating_workflows(app, al
 
 
 def test_dashboard_with_no_tasks_has_an_empty_state(app, alice):
-    assert "No tasks yet" in alice.get("/dashboard").get_data(as_text=True)
+    assert "Nothing here yet" in alice.get("/dashboard").get_data(as_text=True)
 
 
 # ------------------------------------------------------------- misc / errors
@@ -691,7 +691,7 @@ def test_review_queue_shows_progress(app, alice, trio):
 
 def test_landing_page_seo_and_navigation(app):
     html = Browser(app).get("/").get_data(as_text=True)
-    assert 'name="description" content="Revisely is a project review and improvement platform' in html
+    assert 'name="description" content="Revora is a project review and improvement platform' in html
     assert 'property="og:title"' in html and 'rel="icon"' in html
     assert "noindex" not in html
     for anchor in ("#how-it-works", "#goals", "#trust", "#faq"):

@@ -4,7 +4,7 @@
 <div class="page-head">
     <div>
         <h1>Your projects</h1>
-        <p>Group related tasks. Progress counts only <b>verified</b> tasks.</p>
+        <p>Group related review requests and tasks. Progress counts only tasks with a <b>verified</b> proof.</p>
     </div>
     <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">+ New project</a>
 </div>
@@ -17,7 +17,7 @@
         {% if project['description'] %}<p class="muted small">{{ project['description'] }}</p>{% endif %}
         <div class="meta">
             <span class="pill">{{ project['status'] }}</span>
-            <span><b>{{ project['verified_tasks'] or 0 }}</b> / {{ project['task_count'] }} tasks verified</span>
+            <span><b>{{ project['verified_tasks'] or 0 }}</b> of {{ project['task_count'] }} verified</span>
         </div>
         <div class="foot">
             {% if project['github_url'] %}<a href="{{ project['github_url'] }}" target="_blank" rel="noopener noreferrer nofollow">GitHub repository</a>{% endif %}

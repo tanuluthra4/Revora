@@ -53,3 +53,9 @@ Migration 5 only adds tables and columns, so the previous release still opens a 
 - **Before any review-mode request exists:** redeploy the previous commit. Old verification flows, profiles, picker and `/proof/` links work (legacy share columns are kept in step).
 - **After review-mode requests exist:** do not roll back the code over live data. Fix forward, or restore `<db>.pre-v6.bak` / a backup taken before the rollout, which **discards everything created after that point** (reports, findings, new accounts, new links).
 - Review-mode links (`/r/<token>`) and reports are invisible to the previous release; review-mode requests that are not yet REVIEWED would show in it without a mode guard, which is another reason not to run both versions on the same data.
+
+## Renaming the service, repository or database file (not done; needs your approval)
+The product is called Revora, but three technical names still say `proof-of-work-os` / `pow_os`. They were left alone on purpose:
+* **Render service name** (`render.yaml`): if the Blueprint is synced with a different name, Render may create a *new* service with a new, empty disk and database instead of renaming the old one. Rename it in the Render dashboard (Settings) instead, after taking a backup; the `onrender.com` address changes with the name.
+* **GitHub repository** (`tanuluthra4/proof-of-work-os`, linked in the landing-page footer): rename it on GitHub, then update that one link in `templates/welcome.html` and the clone URL in the README. GitHub redirects the old address.
+* **Database file `pow_os.db`**: renaming it would make the app open a new empty file. Keep the name, or move the file and `DATABASE_PATH` together during a planned, backed-up change.

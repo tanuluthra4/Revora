@@ -19,7 +19,7 @@ NEW_TABLES = {"submission_versions", "review_reports", "review_findings",
 
 
 def build_v4_database(path):
-    """A v4 database (the release before Revisely) with a verified legacy proof,
+    """A v4 database (the release before Revora) with a verified legacy proof,
     a shared and a revoked link, an open request and a reviewer profile."""
     build_v2_database(path)                      # v2 with a sealed VERIFIED chain + share token
     conn = sqlite3.connect(path)

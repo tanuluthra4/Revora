@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Revisely{% endblock %} | Revisely</title>
+    <title>{% block title %}Revora{% endblock %} | Revora</title>
     {% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='brand/favicon-16.png') }}">
@@ -16,7 +16,7 @@
 {% if current_user %}
 <header class="topbar">
     <div class="topbar-inner">
-        <a class="brand" href="{{ url_for('main.home') }}"><img src="{{ url_for('static', filename='brand/header-48.png') }}" srcset="{{ url_for('static', filename='brand/revisely-logo-96.png') }} 2x" width="32" height="32" alt="" class="brand-logo">Revisely</a>
+        <a class="brand" href="{{ url_for('main.home') }}"><img src="{{ url_for('static', filename='brand/header-48.png') }}" srcset="{{ url_for('static', filename='brand/revora-logo-96.png') }} 2x" width="32" height="32" alt="" class="brand-logo">Revora</a>
         <nav class="nav" aria-label="Main">
             {% if current_user['role'] == 'reviewer' %}
             <a href="{{ url_for('tasks.review_queue') }}" class="{{ 'active' if request.endpoint == 'tasks.review_queue' }}">Review requests</a>

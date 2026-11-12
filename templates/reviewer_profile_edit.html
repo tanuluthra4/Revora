@@ -3,7 +3,7 @@
 {% block title %}My reviewer profile{% endblock %}
 {% block content %}
 <div class="page-head"><div><h1>My reviewer profile</h1>
-<p>Developers use this to decide whom to ask. Everything you write is shown as <b>self-reported</b>; the platform verifies none of it.</p></div>
+<p>Authors use this to decide whom to ask. Everything you write is shown as <b>self-reported</b>; the platform verifies none of it.</p></div>
 <div class="actions-row">{% if form.profile_visibility != 'private' %}<a class="btn btn-ghost btn-sm" href="{{ url_for('reviewers.public_profile', username=profile.username) }}">View public page</a>{% endif %}</div></div>
 
 <div class="card" aria-labelledby="comp-h"><h2 id="comp-h">Profile completeness: {{ profile.completeness }}%</h2>

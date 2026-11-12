@@ -68,12 +68,12 @@
             {% if 'VOTE_APPROVE' in (actions|map(attribute='value')|list) %}
             <form method="post" class="review-form" style="margin-top:14px">
                 {{ csrf() }}
-                <label for="reason">Your decision note (required, 5&ndash;2000 characters; shown to the developer)</label>
+                <label for="reason">Your decision note (required, 5&ndash;2000 characters; shown to the author)</label>
                 <textarea id="reason" name="reason" minlength="5" maxlength="2000" required></textarea>
                 <label for="private_notes">Private note (optional; only you can read this)</label>
                 <textarea id="private_notes" name="private_notes" maxlength="2000"></textarea>
-                <label class="check-row"><input type="checkbox" name="note_public" value="1"> Show my decision note on the developer&rsquo;s public proof page</label>
-                <p class="hint">By approving you state that the evidence is consistent with the claim. You are not certifying the developer&rsquo;s identity, employer or skill level.</p>
+                <label class="check-row"><input type="checkbox" name="note_public" value="1"> Show my decision note on the author&rsquo;s public proof page</label>
+                <p class="hint">By approving you state that the evidence is consistent with the claim. You are not certifying the author&rsquo;s identity, employer or skill level.</p>
                 <div class="actions-row">
                     <button type="submit" class="btn-good" formaction="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='VOTE_APPROVE') }}">Approve</button>
                     <button type="submit" class="btn-danger" formaction="{{ url_for('tasks.fire_event', task_id=task['id'], event_name='VOTE_REJECT') }}">Reject</button>

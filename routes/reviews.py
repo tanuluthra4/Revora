@@ -1,4 +1,4 @@
-"""Revisely review requests: versions, reports, findings and opt-in public sharing.
+"""Revora review requests: versions, reports, findings and opt-in public sharing.
 
 Authorisation is decided on the server in every view:
   * a review request belongs to its owner; reviewers see it only while assigned;
@@ -17,6 +17,7 @@ from services import finding_service as fs
 from services.evidence_service import EvidenceError, EvidenceNotAllowed
 from services.fsm_view import EVENT_LABELS, STATE_LABELS, build_fsm_view
 from services.integrity import verify_chain
+from services.progress_service import build_progress
 from services.automata_engine import TransitionBlocked, WorkflowNotFound
 from services.report_service import (CATEGORIES, CONSENT_TEXT, CONSENT_VERSION, MAX_FINDINGS, SEVERITIES)
 from services.share_service import active_link, create_link, has_revoked, resolve, revoke_link
@@ -30,7 +31,7 @@ FINDING_FIELDS = ("severity", "category", "title", "explanation", "suggested_fix
                   "file_path", "commit_ref", "repro_evidence", "prior_finding_id")
 NOT_A_CERTIFICATION = (
     "This is a community review written by an individual account. It is not a certification, "
-    "endorsement or guarantee. Revisely has not verified any reviewer's identity, employer or "
+    "endorsement or guarantee. Revora has not verified any reviewer's identity, employer or "
     "expertise, and separate accounts do not prove that reviewers are independent of the author."
 )
 
@@ -151,6 +152,21 @@ def detail(task_id):
             severities=SEVERITIES, consent_text=CONSENT_TEXT, consent_version=CONSENT_VERSION,
             slots=range(1, FORM_FINDING_SLOTS + 1), status_labels=fs.STATUS_LABELS,
             disclaimer=NOT_A_CERTIFICATION)
+    finally:
+        conn.close()
+
+
+@reviews_bp.route("/reviews/<int:task_id>/progress")
+@login_required
+def progress(task_id):
+    conn = get_db_connection()
+    try:
+        task = _load_task(conn, task_id)
+        access = _access_for(conn, task)
+        if access is None or task["review_mode"] != "review":
+            abort(404)
+        data = build_progress(conn, task["workflow_id"], g.user["id"], access == "owner")
+        return render_template("review_progress.html", task=task, data=data, is_owner=access == "owner")
     finally:
         conn.close()
 

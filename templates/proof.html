@@ -3,11 +3,11 @@
 {% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
 <div style="max-width:820px;margin:0 auto">
-    <p class="muted small">Revisely &middot; public proof page (original verification)</p>
+    <p class="muted small">Revora &middot; public proof page (original verification)</p>
     <div class="card">
         <h1>{{ proof['title'] }} <span class="pill state-VERIFIED">Reviewer-approved</span></h1>
         <div class="kv">
-            <span>Developer: <b>{{ proof['owner_name'] }}</b></span>
+            <span>Author: <b>{{ proof['owner_name'] }}</b></span>
             {% if proof['project_title'] %}<span>Project: <b>{{ proof['project_title'] }}</b></span>{% endif %}
             {% if submitted_at %}<span>Submitted: <b>{{ submitted_at }} UTC</b></span>{% endif %}
             {% if proof['completed_at'] %}<span>Verified: <b>{{ proof['completed_at'] }} UTC</b></span>{% endif %}
@@ -27,7 +27,7 @@
             {% endfor %}
         </ul>
 
-        <div class="notice warn small" style="margin-top:12px"><b>Independent reviewer approval is not organisation certification.</b> The reviewers are individual accounts. Their identity, employer and expertise are not verified by Revisely, and several approvals do not make them an organisation. Judge how much you trust the named reviewers.</div>
+        <div class="notice warn small" style="margin-top:12px"><b>Independent reviewer approval is not organisation certification.</b> The reviewers are individual accounts. Their identity, employer and expertise are not verified by Revora, and several approvals do not make them an organisation. Judge how much you trust the named reviewers.</div>
 
         <h2 style="margin-top:20px">Evidence reviewed</h2>
         {% for item in evidence %}

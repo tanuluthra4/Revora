@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: revisely
+    name: proof-of-work-os   # DO NOT rename without approval: a new name can create a second service with an empty database (see docs/OPERATIONS.md)
     runtime: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4"
@@ -13,7 +13,7 @@ services:
       - key: DEFAULT_REQUIRED_APPROVALS
         value: "2"
       - key: PUBLIC_BASE_URL
-        sync: false          # optional, e.g. https://revisely.onrender.com
+        sync: false          # optional, e.g. https://your-service.onrender.com
       # SQLite lives on the instance filesystem. On the free plan it is wiped on
       # every deploy/restart. APPROVED PLAN (not applied by this file's author):
       # paid web service + persistent disk. Applying it needs the owner's explicit

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Progress across versions{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Progress across versions</h1>
+        <div class="kv"><span>Request: <b>{{ task['title'] }}</b></span>
+            <span>{% if is_owner %}Showing findings from all reports{% else %}Showing findings from your own reports only{% endif %}</span></div>
+    </div>
+    <div class="actions-row"><a class="btn btn-ghost btn-sm" href="{{ url_for('reviews.detail', task_id=task['id']) }}">&larr; Back to review</a></div>
+</div>
+
+<section class="card" aria-labelledby="sum-h">
+    <h2 id="sum-h">Where things stand</h2>
+    {% if data.total == 0 %}
+        <p class="muted">No findings have been recorded yet, so there is no progress to show.</p>
+    {% else %}
+        <p><b>{{ data.total }}</b> finding{{ '' if data.total == 1 else 's' }} across {{ data.rounds|length }} version{{ '' if data.rounds|length == 1 else 's' }}:
+        {% for key, label, _ in data.groups %}<span class="pill grp-{{ key }}">{{ data.overall[key] }} {{ label|lower }}</span> {% endfor %}</p>
+        <p class="muted small">These are counts of recorded statuses. They are not a score or a grade, and a reviewer&rsquo;s verification is one person&rsquo;s opinion, not a certification.</p>
+        {% if data.open_serious %}
+        <h3>Still unresolved: critical and high findings</h3>
+        <ul>{% for f in data.open_serious %}<li><span class="pill bad">{{ f.severity }}</span> {{ f.title }} <span class="muted small">(version {{ f.round }}, {{ f.status_label }})</span></li>{% endfor %}</ul>
+        {% endif %}
+    {% endif %}
+</section>
+
+{% for r in data.rounds|reverse %}
+<section class="card" aria-labelledby="v{{ r.round }}-h">
+    <h2 id="v{{ r.round }}-h">Version {{ r.round }} <span class="muted small">&mdash; commit <code>{{ r.commit_sha[:12] }}</code>, submitted {{ r.created_at }}</span></h2>
+    {% if r.total == 0 %}<p class="muted">No findings were recorded for this version{% if not r.reports %} (no report visible to you){% endif %}.</p>
+    {% else %}
+    <div class="progress-bar" role="img" aria-label="{% for key, label, _ in data.groups %}{{ r.counts[key] }} {{ label|lower }}{{ ', ' if not loop.last }}{% endfor %}">
+        {% for key, label, _ in data.groups %}{% if r.counts[key] %}<span class="seg grp-{{ key }}" style="flex: {{ r.counts[key] }}"></span>{% endif %}{% endfor %}
+    </div>
+    <p class="small muted">{% for key, label, _ in data.groups %}{{ r.counts[key] }} {{ label|lower }}{{ ' · ' if not loop.last }}{% endfor %}</p>
+    <ul class="plain">
+    {% for f in r.findings %}
+        <li><span class="pill {{ 'bad' if f.severity in ('critical','high') else '' }}">{{ f.severity }}</span> <b>{{ f.title }}</b>
+            <span class="pill grp-{{ f.group }}">{{ f.status_label }}</span>
+            {% if f.prior_finding_id and f.prior_finding_id in data.by_id %}<span class="muted small">&mdash; follow-up to &ldquo;{{ data.by_id[f.prior_finding_id].title }}&rdquo; from version {{ data.by_id[f.prior_finding_id].round }}</span>{% endif %}
+            {% if f.id in data.follow_ups %}<span class="muted small">&mdash; followed up in version {{ data.by_id[data.follow_ups[f.id][0]].round }}</span>{% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

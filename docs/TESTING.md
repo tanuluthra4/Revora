@@ -6,7 +6,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider
 ```
 Tests use temporary databases only and never open `database/pow_os.db`.
 
-Result of the last full run on the audited tree (Python 3.13.16): **389 passed, 0 failed, 0 skipped, 14 warnings** (the warnings come from the image-comparison code in `test_branding.py`).
+Result of the last full run on the audited tree (Python 3.13.16): **395 passed, 0 failed, 0 skipped, 14 warnings** (the warnings come from the image-comparison code in `test_branding.py`).
 
 | File | Tests | Covers |
 |---|---|---|
@@ -17,7 +17,8 @@ Result of the last full run on the audited tree (Python 3.13.16): **389 passed, 
 | test_share_links_trigger | 37 | every immutable column, one-way revoke, revoke + tamper |
 | test_backup_restore, test_db_transaction, test_review_concurrency | 16 | backup rules, rollback, COMMIT failure, concurrent events |
 | test_authorization_matrix | 37 | every task/review route against the wrong actor; anonymous access; project/profile privacy; edit-page regression |
-| test_hardening | 10 | login throttle, CSP, dead-code regressions |
+| test_hardening | 12 | login throttle, CSP, dead-code regressions |
+| test_progress | 4 | progress-across-versions page: counts, follow-up links, privacy, empty state |
 | test_e2e_workflow | 1 | full student/reviewer journey over HTTP with negatives |
 | test_branding | 36 | logo integrity and branding assets |
 

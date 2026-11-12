@@ -5,15 +5,15 @@
 <div class="page-head">
     <div>
         <h1>Review requests</h1>
-        <p>You only see evidence that a developer assigned to <b>you</b>. Other reviewers&rsquo; decisions stay hidden until you decide. You can never review your own work.</p>
+        <p>You only see requests that an author assigned to <b>you</b>. Other reviewers&rsquo; reports stay hidden until you submit yours. You can never review your own work.</p>
     </div>
 </div>
-<div class="notice small" style="margin-bottom:14px">Developers find reviewers through the directory. <a href="{{ url_for('reviewers.edit_profile') }}">Edit your reviewer profile</a> to choose whether you are listed. Everything on it is shown as self-reported.</div>
+<div class="notice small" style="margin-bottom:14px">Authors find reviewers through the directory. <a href="{{ url_for('reviewers.edit_profile') }}">Edit your reviewer profile</a> to choose whether you are listed. Everything on it is shown as self-reported.</div>
 <div class="card">
     <h2>Awaiting your review</h2>
     {% if queue %}
     <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table class="queue">
-        <thead><tr><th>Task</th><th>Developer</th><th>State</th><th>Evidence items</th><th>Progress</th><th>Waiting since</th><th></th></tr></thead>
+        <thead><tr><th>Request</th><th>Author</th><th>Stage</th><th>Evidence items</th><th>Progress</th><th>Waiting since</th><th></th></tr></thead>
         <tbody>
         {% for item in queue %}
         <tr>
@@ -29,20 +29,20 @@
         </tbody>
     </table></div>
     {% else %}
-    <div class="empty"><h3>Nothing to review</h3><p>When a developer sends you evidence for verification it will appear here. Share your username or e-mail with them so they can assign you.</p></div>
+    <div class="empty"><h3>Nothing to review</h3><p>When an author sends you a version to review it will appear here. Share your username or e-mail with them so they can assign you.</p></div>
     {% endif %}
 </div>
 <div class="card">
     <h2>Your past reviews and decisions</h2>
     {% if decided %}
     <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table class="queue">
-        <thead><tr><th>Task</th><th>Developer</th><th>Outcome</th><th>Decided</th><th></th></tr></thead>
+        <thead><tr><th>Request</th><th>Author</th><th>Outcome</th><th>Decided</th><th></th></tr></thead>
         <tbody>
         {% for item in decided %}
         <tr>
             <td>{{ item['title'] }}</td><td>{{ item['owner_name'] }}</td>
             <td>{{ state_pill(item['current_state'], 'Review complete' if item['current_state'] == 'REVIEWED' else item['current_state'].title()) }}</td>
-            <td class="muted small">{{ item['decided_at'] }} UTC</td>
+            <td class="muted small">{% if item['decided_at'] %}{{ item['decided_at'] }} UTC{% else %}&mdash;{% endif %}</td>
             <td><a class="btn btn-ghost btn-sm" href="{{ url_for('tasks.task_detail', task_id=item['task_id']) }}">View</a></td>
         </tr>
         {% endfor %}

@@ -5,7 +5,7 @@
 <div class="page-head">
     <div>
         <h1>Welcome, {{ current_user['username'] }}</h1>
-        <p>Every skill claim needs evidence, and every state change is checked by the automaton.</p>
+        <p>Your review requests and tasks in one place. Every status change is recorded and checked.</p>
     </div>
     <div class="actions-row">
         {% if current_user['role'] == 'reviewer' %}
@@ -16,7 +16,7 @@
     </div>
 </div>
 
-<section class="stats" aria-label="Verification summary">
+<section class="stats" aria-label="Summary">
     <div class="stat good"><b>{{ counts.verified }}</b><span>Verified proofs</span></div>
     <div class="stat"><b>{{ counts.reviewed }}</b><span>Reviews complete</span></div>
     <div class="stat"><b>{{ counts.in_review }}</b><span>In review</span></div>
@@ -37,10 +37,10 @@
             {% if task['project_title'] %}<span>{{ task['project_title'] }}</span><span>&middot;</span>{% endif %}
             <span>priority: {{ task['priority'] or 'medium' }}</span>
             {% if task['due_date'] %}<span>&middot;</span><span>due {{ task['due_date'] }}</span>{% endif %}
-            <span>&middot;</span>
-            <span>self-reported: {{ task['status'] }}</span>
+            {% if task['review_mode'] == 'review' %}<span>&middot;</span><span>review request, version {{ task['workflow_round'] }}</span>
+            {% else %}<span>&middot;</span><span>self-reported: {{ task['status'] }}</span>{% endif %}
         </div>
-        <div class="progress {{ 'verified' if card.state == 'VERIFIED' else 'rejected' if card.state == 'REJECTED' }}" role="progressbar" aria-valuenow="{{ card.progress }}" aria-valuemin="0" aria-valuemax="100" aria-label="Verification progress">
+        <div class="progress {{ 'verified' if card.state == 'VERIFIED' else 'rejected' if card.state == 'REJECTED' }}" role="progressbar" aria-valuenow="{{ card.progress }}" aria-valuemin="0" aria-valuemax="100" aria-label="Workflow progress">
             <i style="width: {{ card.progress }}%"></i>
         </div>
         <div class="foot">
@@ -50,7 +50,7 @@
                 {{ post_button(url_for('tasks.fire_event', task_id=task['id'], event_name=event.value), event_labels[event], 'btn btn-primary btn-sm', next='dashboard') }}
                 {% endif %}
             {% endfor %}
-            {% if task['status'] == 'Pending' %}
+            {% if task['status'] == 'Pending' and task['review_mode'] != 'review' %}
             {{ post_button(url_for('tasks.complete_task', task_id=task['id']), 'Mark done', 'btn btn-ghost btn-sm', next='dashboard') }}
             {% endif %}
             {% if card.state != 'VERIFIED' %}
@@ -62,9 +62,9 @@
 </div>
 {% else %}
 <div class="card empty">
-    <h3>No tasks yet</h3>
-    <p>Create a task, work on it, then back it up with evidence a reviewer can check.</p>
-    <p style="margin-top:16px"><a class="btn btn-primary" href="{{ url_for('tasks.add_task') }}">Create your first task</a></p>
+    <h3>Nothing here yet</h3>
+    <p>Request a review of one version of a project, or create a task to track your own work.</p>
+    <p style="margin-top:16px"><a class="btn btn-primary" href="{{ url_for('reviews.new_request') }}">Request your first review</a></p>
 </div>
 {% endif %}
 {% endblock %}

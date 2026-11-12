@@ -17,6 +17,7 @@
     </div>
     <div class="actions-row">
         {% if is_owner %}{{ post_button(url_for('tasks.delete_task', task_id=task['id']), 'Delete', 'btn btn-danger btn-sm', confirm='Delete this request? Requests that already have reports cannot be deleted.') }}{% endif %}
+        {% if versions|length > 1 or reports %}<a class="btn btn-ghost btn-sm" href="{{ url_for('reviews.progress', task_id=task['id']) }}">Progress across versions</a>{% endif %}
         <a class="btn btn-ghost btn-sm" href="{{ url_for('main.dashboard') if is_owner else url_for('tasks.review_queue') }}">&larr; Back</a>
     </div>
 </div>
@@ -77,7 +78,7 @@
         {% if version['demo_url'] %}<p class="small">Demo: <a href="{{ version['demo_url'] }}" target="_blank" rel="noopener noreferrer nofollow">{{ version['demo_url'] }}</a></p>{% endif %}
         {% if version['questions'] %}<p class="small"><b>Author&rsquo;s questions:</b> <span class="prewrap">{{ version['questions'] }}</span></p>{% endif %}
         {% endif %}
-        {% if is_reviewer %}<p class="hint">Revisely does not fetch or run this repository. Open it yourself, and treat its contents as untrusted. You can only report on what you actually looked at; say what you did not assess.</p>{% endif %}
+        {% if is_reviewer %}<p class="hint">Revora does not fetch or run this repository. Open it yourself, and treat its contents as untrusted. You can only report on what you actually looked at; say what you did not assess.</p>{% endif %}
     </section>
 
     <section class="card" aria-labelledby="rv-h">
@@ -85,7 +86,7 @@
         {% if assigned %}<ul class="panel-list">{% for a in assigned %}<li><b>{{ a['username'] }}</b> {% if a['reported'] %}<span class="pill ok">report submitted</span>{% else %}<span class="pill">no report yet</span>{% endif %}</li>{% endfor %}</ul>
         {% else %}<p class="muted">No reviewers chosen yet.</p>{% endif %}
         {% if can_choose %}<a class="btn btn-primary btn-sm" style="margin-top:10px" href="{{ url_for('reviewers.picker', task_id=task['id']) }}">Choose reviewers</a>{% endif %}
-        <p class="hint">Reviewers are separate accounts with self-reported backgrounds. Separate accounts do not prove independence, and Revisely cannot detect one person using several accounts.</p>
+        <p class="hint">Reviewers are separate accounts with self-reported backgrounds. Separate accounts do not prove independence, and Revora cannot detect one person using several accounts.</p>
     </section>
     {% endif %}
 
@@ -147,13 +148,13 @@
                 {{ finding_head(f) }}
                 {% if f['updates'] %}<ul class="small">{% for u in f['updates'] %}<li>{{ u['created_at'] }} UTC &middot; {{ u['actor_name'] }} ({{ u['actor_role'] }}): {{ status_labels[u['to_status']] }} &mdash; {{ u['note'] }}{% if u['commit_ref'] %} (commit <span class="mono">{{ u['commit_ref'] }}</span>){% endif %}</li>{% endfor %}</ul>{% endif %}
                 {% if f['next'] %}
-                <form method="post" action="{{ url_for('reviews.update_finding', finding_id=f['id']) }}" class="inline-form">
+                <form method="post" action="{{ url_for('reviews.update_finding', finding_id=f['id']) }}" class="finding-form">
                     {{ csrf() }}
-                    <label class="small" for="st{{ f['id'] }}">Change status</label>
-                    <select id="st{{ f['id'] }}" name="to_status">{% for s in f['next'] %}<option value="{{ s }}">{{ status_labels[s] }}</option>{% endfor %}</select>
-                    <label class="small" for="nt{{ f['id'] }}">Note</label><input id="nt{{ f['id'] }}" name="note" required maxlength="1000">
-                    <label class="small" for="cm{{ f['id'] }}">Commit (optional)</label><input id="cm{{ f['id'] }}" name="commit_ref" maxlength="40">
-                    <button class="btn btn-ghost btn-sm" type="submit">Update</button>
+                    <div class="ff-field"><label for="st{{ f['id'] }}">Change status</label>
+                        <select id="st{{ f['id'] }}" name="to_status">{% for s in f['next'] %}<option value="{{ s }}">{{ status_labels[s] }}</option>{% endfor %}</select></div>
+                    <div class="ff-field ff-wide"><label for="nt{{ f['id'] }}">Note</label><input id="nt{{ f['id'] }}" name="note" required maxlength="1000" placeholder="What changed, or what you checked"></div>
+                    <div class="ff-field"><label for="cm{{ f['id'] }}">Commit (optional)</label><input id="cm{{ f['id'] }}" name="commit_ref" maxlength="40" placeholder="abc1234"></div>
+                    <div class="ff-action"><button class="btn btn-primary btn-sm" type="submit">Save update</button></div>
                 </form>{% endif %}
             </div>
             {% else %}<p class="muted">No findings in this report.</p>{% endfor %}

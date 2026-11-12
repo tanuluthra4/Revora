@@ -1,4 +1,4 @@
-"""HTTP-level tests for Revisely review requests: consent, authorization, findings, sharing."""
+"""HTTP-level tests for Revora review requests: consent, authorization, findings, sharing."""
 import re
 
 import pytest

@@ -1,12 +1,12 @@
-# Revisely (internal name: Proof-of-Work OS)
+# Revora (internal name: Proof-of-Work OS)
 
 **A project review and improvement platform for students and early-career developers.** Authors submit one version of a project, community reviewers write structured reports with findings, authors track and fix those findings, and a follow-up version can be reviewed again. Sharing a review is optional, per version and revocable.
 
 The codebase, repository and Render service keep the internal name *Proof-of-Work OS*. The original evidence-verification workflow is still here, unchanged, for existing records and for tasks created through the old "New task" form.
 
-Live deployment (previous version): https://proof-of-work-os.onrender.com. Nothing in this repository deploys or modifies it. See `docs/OPERATIONS.md` for the staged rollout and rollback.
+The existing live service still runs the previous version under its original service name and address (`proof-of-work-os`); the Revora name is not applied there yet. Nothing in this repository deploys or modifies it. See `docs/OPERATIONS.md` for the staged rollout and rollback.
 
-## What Revisely adds (review mode)
+## What Revora adds (review mode)
 
 - **Review requests** are about one named project and one explicit *version* (repository address, commit SHA, tech stack, demo, questions, review goal: *production readiness* or *interview preparation*). A submitted version is locked (database trigger plus a digest sealed in the audit chain).
 - **Structured plain-text reports**: summary, strengths, unresolved concerns, what was assessed, what was **not** assessed, optional interview questions, and findings (severity, category, explanation, suggested fix, reasoning, file, commit, reproduction). Private notes stay with their author.
@@ -160,10 +160,14 @@ UPDATE state_transitions SET reason = 'edited' WHERE seq = 1;
 | `DATABASE_PATH` | SQLite file (default `database/pow_os.db`) |
 | _(removed)_ `REVIEWER_EMAILS`, `REVIEWER_INVITE_CODE`, `REVIEWER_OPEN_SIGNUP` | No longer read. Delete them from the Render dashboard; leaving them set is harmless |
 | `DEFAULT_REQUIRED_APPROVALS` | Pre-filled approvals required in the form (default `2`) |
-| `PUBLIC_BASE_URL` | Optional, e.g. `https://proof-of-work-os.onrender.com`. Only if set are canonical/`og:url` tags emitted |
+| `PUBLIC_BASE_URL` | Optional, e.g. `https://your-service.onrender.com`. Only if set are canonical/`og:url` tags emitted |
 | `PORT` | Used by `python app.py` |
 
 Commands: `flask --app app init-db` (create/upgrade; takes a verified pre-migration copy first), `flask --app app backup-db [--out PATH]` (consistent verified copy, safe while running), `flask --app app set-role EMAIL ROLE`.
+
+## Progress across versions
+
+Each review request has a read-only page showing how findings moved between versions: counts by recorded status, which finding a later one follows up, and which critical or high findings are still unresolved. It uses only stored data and shows no score or grade.
 
 ## More documentation
 
@@ -193,7 +197,7 @@ See **`docs/OPERATIONS.md`** for the approved plan: a paid Render web service wi
 - No reviewer reminders or expiry; an unavailable reviewer is handled by manual replacement or withdrawal.
 - Contrast was computed for the colour tokens (see below), but no screen-reader or full WCAG audit has been performed, and no Lighthouse run is claimed.
 - SQLite on Render's free plan is ephemeral; with a disk it is a single-instance database (no horizontal scaling, no zero-downtime deploys, whole-disk restore only). A monthly off-platform copy is recommended and its limits are in `docs/OPERATIONS.md`.
-- The commit SHA and repository address are what the author typed; Revisely does not check that they exist or match.
+- The commit SHA and repository address are what the author typed; Revora does not check that they exist or match.
 - Separate accounts do not prove reviewer independence (see above).
 
 ## Accessibility and SEO

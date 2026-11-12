@@ -3,11 +3,11 @@
 {% block title %}Sign up{% endblock %}
 {% block body %}
 <main class="narrow">
-    <div class="auth-brand"><b>Revisely</b></div>
+    <div class="auth-brand"><a href="{{ url_for('main.home') }}" aria-label="Revora home"><img src="{{ url_for('static', filename='brand/revora-logo-96.png') }}" width="48" height="48" alt="" class="auth-logo"></a><b>Revora</b></div>
     <div class="card">
-        <span class="pill role">{{ selected_role }}</span>
-        <h1 class="title-sm" style="margin-top:8px">Create your {{ selected_role }} account</h1>
-        <p class="muted small" style="margin-bottom:14px">{% if selected_role == 'reviewer' %}Anyone can join as a reviewer. You will build a public reviewer profile that developers can search, and you review only the evidence assigned to you. Your account alone does not verify your identity or expertise.{% else %}Developers create tasks, attach evidence and ask a reviewer to verify it.{% endif %}</p>
+        <span class="pill role">{{ "author" if selected_role == "developer" else selected_role }}</span>
+        <h1 class="title-sm" style="margin-top:8px">Create your {{ 'author' if selected_role == 'developer' else 'reviewer' }} account</h1>
+        <p class="muted small" style="margin-bottom:14px">{% if selected_role == 'reviewer' %}Anyone can join as a reviewer. You will build a reviewer profile that authors can search, and you see only the requests assigned to you. Your account alone does not verify your identity or expertise.{% else %}Authors request reviews of a project version, read the findings, fix them and ask the reviewer to check the fixes.{% endif %}</p>
         {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
         <form method="post">
             {{ csrf() }}

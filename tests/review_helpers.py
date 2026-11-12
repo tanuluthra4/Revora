@@ -1,4 +1,4 @@
-"""Helpers for review-mode (Revisely) tests."""
+"""Helpers for review-mode (Revora) tests."""
 from automata.states import WorkflowEvent as E
 from database.db import get_db_connection, transaction
 from services.report_service import CONSENT_VERSION
