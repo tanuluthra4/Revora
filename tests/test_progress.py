@@ -45,8 +45,6 @@ def test_reviewer_sees_only_their_own_findings_and_no_private_notes(app, alice, 
     assert "Private note" not in html
 
 
-def test_empty_state_and_verification_mode_requests(app, alice):
+def test_empty_state(app, alice):
     tid = new_request(alice, app)
     assert "No findings have been recorded yet" in alice.get(f"/reviews/{tid}/progress").get_data(as_text=True)
-    task = create_task(alice, "Legacy task")
-    assert alice.get(f"/reviews/{task}/progress").status_code == 404

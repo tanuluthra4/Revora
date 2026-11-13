@@ -109,7 +109,8 @@
                 <summary>Demo: try an action the automaton should refuse</summary>
                 <p class="muted small" style="margin-bottom:10px">These events are not defined from
                     <code>{{ state.value }}</code>. Firing one is refused by the engine and logged under &ldquo;Blocked
-                    attempts&rdquo;.</p>
+                    attempts&rdquo;.
+                </p>
                 <form method="post" class="actions-row" id="probe-form">
                     {{ csrf() }}
                     <select name="event_name" id="probe-event" style="width:auto;margin:0"

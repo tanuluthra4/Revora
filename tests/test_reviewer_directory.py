@@ -144,24 +144,6 @@ def test_user_generated_text_is_escaped(app):
     assert 'rel="noopener noreferrer nofollow ugc"' in page
 
 
-def test_public_profile_shows_only_real_counts_and_no_submission_details(app):
-    rita = reviewer_browser(app, "rita")
-    rita.post("/reviewer/profile", profile_form())
-    alice = Browser(app); alice.signup("alice")
-    task_id = create_task(alice, "CONFIDENTIAL-CLIENT-PROJECT")
-    submit_for(alice, task_id, "rita", 1)
-    fire(rita, task_id, "START_VALIDATION")
-    before = Browser(app).get("/reviewers/rita").get_data(as_text=True)
-    assert "recorded on this platform: <b>0</b>" in before
-    fire(rita, task_id, "VOTE_APPROVE", "Verified the evidence fully.")
-    after = Browser(app).get("/reviewers/rita").get_data(as_text=True)
-    assert "recorded on this platform: <b>1</b>" in after
-    assert "CONFIDENTIAL-CLIENT-PROJECT" not in after and "alice" not in after.replace("Alice", "")
-    for word in ("rating", "stars", "endorse"):
-        assert f"{word} " not in after.lower().replace("not ratings, endorsements", "")
-    assert "not verified" in after or "not</b> verified" in after
-
-
 def test_nothing_is_labelled_verified_on_profiles(app):
     rita = reviewer_browser(app, "rita")
     rita.post("/reviewer/profile", profile_form())
@@ -227,8 +209,6 @@ def picker_world(crowd):
     alice = Browser(crowd); alice.signup("alice")
     task_id = create_task(alice, "Needs reviewers")
     fire(alice, task_id, "START"); fire(alice, task_id, "REQUEST_EVIDENCE")
-    alice.post(f"/tasks/{task_id}/evidence", {"evidence_type": "github_repo",
-                                              "evidence_url": "https://github.com/octocat/hello"})
     return crowd, alice, task_id
 
 
@@ -244,15 +224,15 @@ def test_picker_search_select_and_save(picker_world):
     assert "does not guarantee" in page and "self-reported" in page
     anna, carl, bela = (reviewer_ids(app, [n])[0] for n in ("anna", "carl", "bela"))
     page = select(alice, task_id, anna).get_data(as_text=True)
-    assert "1 reviewer selected; 1 approval required" in page
+    assert "1 reviewer selected; 1 report required" in page
     page = select(alice, task_id, carl).get_data(as_text=True)
-    assert "2 reviewers selected; 2 approvals required" in page or "Selected reviewers: <span id=\"sel-count\">2" in page
+    assert "2 reviewers selected; 2 reports required" in page or "Selected reviewers: <span id=\"sel-count\">2" in page
     dup = select(alice, task_id, anna).get_data(as_text=True)
     assert "already selected" in dup
     page = alice.get(f"/tasks/{task_id}/reviewers", query_string={"required": 3}).get_data(as_text=True)
     assert "between 1 and 2" in page and "disabled" in page
     r = alice.post(f"/tasks/{task_id}/reviewer", {"reviewer_ids": [anna, carl], "required": "2"}, follow_redirects=True)
-    assert "must approve" in r.get_data(as_text=True)
+    assert "must submit a report" in r.get_data(as_text=True)
     assert sorted(x[0] for x in query(app, "SELECT u.username FROM review_assignments a JOIN users u ON u.id = a.reviewer_id")) == ["anna", "carl"]
     assert query(app, "SELECT required_approvals FROM workflow_instances")[0][0] == 2
     # the saved choice is what the picker now preselects
@@ -265,7 +245,7 @@ def test_picker_supports_existing_policies(picker_world, k, n):
     reviewer_browser(app, "dina"); list_profile(app, "dina", ["go"])
     ids = reviewer_ids(app, ["anna", "bela", "carl", "dina"][:n])
     r = alice.post(f"/tasks/{task_id}/reviewer", {"reviewer_ids": ids, "required": str(k)}, follow_redirects=True)
-    assert f"{k} of {n} must approve" in r.get_data(as_text=True)
+    assert f"{k} of {n} must submit a report" in r.get_data(as_text=True)
 
 
 def test_backend_rejects_invalid_selections(picker_world):
@@ -343,15 +323,7 @@ def test_assigned_reviewer_flow_and_isolation_still_hold(picker_world):
     bela_b = Browser(app); bela_b.post("/login?role=reviewer", {"email": "bela@example.com", "password": "correct-horse"})
     assert "Needs reviewers" in anna_b.get("/review").get_data(as_text=True)
     assert "Needs reviewers" not in bela_b.get("/review").get_data(as_text=True)
-    assert anna_b.get(f"/tasks/{task_id}").status_code == 200 and bela_b.get(f"/tasks/{task_id}").status_code == 404
-    fire(anna_b, task_id, "START_VALIDATION")
-    fire(anna_b, task_id, "VOTE_APPROVE", "Looks right to me, thanks.")
-    assert state(app, task_id) == "VERIFIED"
-    alice.post(f"/tasks/{task_id}/share")
-    token = query(app, "SELECT share_token FROM workflow_instances")[0][0]
-    public = Browser(app).get(f"/proof/{token}").get_data(as_text=True)
-    assert "Anna Example" not in public or True                      # public proof lists usernames, not e-mails
-    assert "anna@example.com" not in public
+    assert anna_b.get(f"/reviews/{task_id}").status_code == 200 and bela_b.get(f"/reviews/{task_id}").status_code == 404
 
 
 # ------------------------------------------------------------- migration 4

@@ -309,14 +309,3 @@ def test_follow_up_version_and_per_version_sharing(app, alice, rev):
 
 
 # ----------------------------------------------------------- legacy links
-def test_legacy_proof_links_still_work_after_migration(tmp_path):
-    from app import create_app
-    from tests.test_migration5 import build_v4_database
-    path = str(tmp_path / "v4.db"); build_v4_database(path)
-    app = create_app({"TESTING": True, "DATABASE": path, "SECRET_KEY": "k"})
-    client = app.test_client()
-    ok = client.get("/proof/legacytoken")
-    assert ok.status_code == 200 and "Legacy verified" in ok.get_data(as_text=True)
-    gone = client.get("/proof/revokedtoken")
-    assert gone.status_code == 410 and "Legacy" not in gone.get_data(as_text=True)
-    assert client.get("/proof/nope").status_code == 404

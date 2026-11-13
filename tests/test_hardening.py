@@ -107,7 +107,7 @@ def test_welcome_role_cards_do_not_share_classes_with_the_directory_cards(app):
     assert "Revora" in html
 
 
-def test_ui_wording_and_legacy_controls(app):
+def test_ui_wording_and_no_legacy_controls(app):
     """Author wording on the login page; review requests do not show legacy self-report controls;
     reviewers never see 'None UTC' for an undecided request."""
     from tests.review_helpers import VERSION_FORM
@@ -117,14 +117,13 @@ def test_ui_wording_and_legacy_controls(app):
     page = Browser(app).get("/login").get_data(as_text=True)
     assert "Author login" in page and "Developer login" not in page and "evidence" not in page.lower().split("<form")[0]
     author = Browser(app); author.signup("author1", "author1@example.com")
-    create_task(author, "Legacy")
     author.post("/projects/new", {"title": "P", "status": "Active"})
     pid = query(app, "SELECT id FROM projects")[0][0]
     author.post("/reviews/new", dict(VERSION_FORM, project_id=str(pid), title="Review me"))
     html = author.get("/dashboard").get_data(as_text=True)
     review_card = html.split("Review me")[1].split("</article>")[0]
-    assert "review request, version 1" in review_card and "Mark done" not in review_card
-    assert "Mark done" in html.split("Legacy")[1].split("</article>")[0]
+    assert "version 1" in review_card and "Mark done" not in review_card
+    assert "New task" not in html
     rev = Browser(app); rev.signup("revx", "revx@example.com", role="reviewer")
     rev.post("/login?role=reviewer", {"email": "revx@example.com", "password": "correct-horse"})
     assert "None UTC" not in rev.get("/review").get_data(as_text=True)

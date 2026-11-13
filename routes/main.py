@@ -8,7 +8,7 @@ from services.fsm_view import EVENT_LABELS, STATE_LABELS, progress_percent
 
 main_bp = Blueprint("main", __name__)
 
-NEEDS_ACTION = {"CREATED", "IN_PROGRESS", "EVIDENCE_REQUIRED", "REJECTED"}
+NEEDS_ACTION = {"CREATED", "IN_PROGRESS", "EVIDENCE_REQUIRED"}
 IN_REVIEW = {"EVIDENCE_SUBMITTED", "VALIDATING"}
 
 
@@ -38,7 +38,7 @@ def dashboard():
             FROM tasks t
             LEFT JOIN workflow_instances w ON w.task_id = t.id
             LEFT JOIN projects p ON p.id = t.project_id
-            WHERE t.user_id = ?
+            WHERE t.user_id = ? AND w.review_mode = 'review'
             ORDER BY t.id DESC
             """,
             (g.user["id"],),
@@ -47,20 +47,16 @@ def dashboard():
         conn.close()
 
     cards = []
-    counts = {"verified": 0, "in_review": 0, "needs_action": 0, "rejected": 0, "reviewed": 0}
+    counts = {"in_review": 0, "needs_action": 0, "reviewed": 0}
     for task in tasks:
         state_value = task["workflow_state"] or "CREATED"
         state = WorkflowState(state_value)
-        if state_value == "VERIFIED":
-            counts["verified"] += 1
-        elif state_value == "REVIEWED":
+        if state_value == "REVIEWED":
             counts["reviewed"] += 1
         elif state_value in IN_REVIEW:
             counts["in_review"] += 1
         elif state_value in NEEDS_ACTION:
             counts["needs_action"] += 1
-        if state_value == "REJECTED":
-            counts["rejected"] += 1
 
         cards.append({
             "task": task,

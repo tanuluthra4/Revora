@@ -43,13 +43,13 @@ Whole-disk restore from a Render snapshot is the alternative and also reverts ev
 ## 4. Staged rollout (staging first)
 1. **Staging (owner approval to create):** a separate paid web service with its own disk and its own `SECRET_KEY`, **never sharing the production disk**. Deploy this branch there.
 2. Copy a recent production backup to the staging disk (it holds real password hashes: restrict access, delete it afterwards). Start the app. Confirm `.pre-v6.bak` appeared and the log says it migrated to the latest version (v6).
-3. Run `docs/E2E_CHECKLIST.md` on staging, including a replay of an old verified proof and its public link.
+3. Run `docs/E2E_CHECKLIST.md` on staging.
 4. Take a production backup (`backup-db`) and download it off-platform **(owner approval)**.
 5. Attach the disk and set `DATABASE_PATH` on production **(owner approval)**. The first start migrates; check the log line `Database backed up to ...`.
-6. Smoke-test production: `/healthz`, a legacy `/proof/<token>`, log in, open an old request, create a review request.
+6. Smoke-test production: `/healthz`, log in, open an old request, create a review request.
 
 ## 5. Rollback
 Migration 5 only adds tables and columns, so the previous release still opens a migrated database. **But it cannot display a request in the new `REVIEWED` state: its dashboard raises `ValueError: 'REVIEWED' is not a valid WorkflowState`** (reproduced against the real v4 code). Therefore:
-- **Before any review-mode request exists:** redeploy the previous commit. Old verification flows, profiles, picker and `/proof/` links work (legacy share columns are kept in step).
+- **Before any review-mode request exists:** redeploy the previous commit. Existing records and the picker work (legacy share columns are kept in step).
 - **After review-mode requests exist:** do not roll back the code over live data. Fix forward, or restore `<db>.pre-v6.bak` / a backup taken before the rollout, which **discards everything created after that point** (reports, findings, new accounts, new links).
 - Review-mode links (`/r/<token>`) and reports are invisible to the previous release; review-mode requests that are not yet REVIEWED would show in it without a mode guard, which is another reason not to run both versions on the same data.

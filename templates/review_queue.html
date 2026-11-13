@@ -22,7 +22,6 @@
                     <th>Request</th>
                     <th>Author</th>
                     <th>Stage</th>
-                    <th>Evidence items</th>
                     <th>Progress</th>
                     <th>Waiting since</th>
                     <th></th>
@@ -34,12 +33,9 @@
                     <td>{{ item['title'] }}</td>
                     <td>{{ item['owner_name'] }}</td>
                     <td>{{ state_pill(item['current_state'], item['current_state'].replace('_', ' ').title()) }}</td>
-                    <td>{{ item['evidence_count'] }}</td>
-                    <td>{% if item['review_mode'] == 'review' %}{{ item['decided_count'] }} of {{ item['reviewer_count']
-                        }} reports; {{ item['required_approvals'] }} needed{% if item['my_decisions'] %} <span
-                            class="pill ok">you reported</span>{% endif %}{% else %}{{ item['decided_count'] }} of {{
-                        item['reviewer_count'] }} decided; {{ item['required_approvals'] }} approvals needed{% if
-                        item['my_decisions'] %} <span class="pill ok">you decided</span>{% endif %}{% endif %}</td>
+                    <td>{{ item['decided_count'] }} of {{ item['reviewer_count'] }} reports; {{
+                        item['required_approvals'] }} needed{% if item['my_decisions'] %} <span class="pill ok">you
+                            reported</span>{% endif %}</td>
                     <td class="muted small">{{ item['last_change'] }} UTC</td>
                     <td><a class="btn btn-primary btn-sm"
                             href="{{ url_for('tasks.task_detail', task_id=item['task_id']) }}">Open</a></td>
@@ -57,7 +53,7 @@
     {% endif %}
 </div>
 <div class="card">
-    <h2>Your past reviews and decisions</h2>
+    <h2>Your completed reviews</h2>
     {% if decided %}
     <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table">
         <table class="queue">
@@ -65,8 +61,8 @@
                 <tr>
                     <th>Request</th>
                     <th>Author</th>
-                    <th>Outcome</th>
-                    <th>Decided</th>
+                    <th>Status</th>
+                    <th>Completed</th>
                     <th></th>
                 </tr>
             </thead>
@@ -75,8 +71,7 @@
                 <tr>
                     <td>{{ item['title'] }}</td>
                     <td>{{ item['owner_name'] }}</td>
-                    <td>{{ state_pill(item['current_state'], 'Review complete' if item['current_state'] == 'REVIEWED'
-                        else item['current_state'].title()) }}</td>
+                    <td>{{ state_pill(item['current_state'], 'Review complete') }}</td>
                     <td class="muted small">{% if item['decided_at'] %}{{ item['decided_at'] }} UTC{% else %}&mdash;{%
                         endif %}</td>
                     <td><a class="btn btn-ghost btn-sm"
@@ -86,6 +81,6 @@
             </tbody>
         </table>
     </div>
-    {% else %}<p class="muted small">No decisions yet.</p>{% endif %}
+    {% else %}<p class="muted small">No completed reviews yet.</p>{% endif %}
 </div>
 {% endblock %}

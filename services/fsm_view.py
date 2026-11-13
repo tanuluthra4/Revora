@@ -25,9 +25,7 @@ _LAYOUT = {
     WorkflowState.EVIDENCE_REQUIRED: (460, ROW1),
     WorkflowState.EVIDENCE_SUBMITTED: (650, ROW1),
     WorkflowState.VALIDATING: (840, ROW1),
-    WorkflowState.REJECTED: (650, ROW2),
-    WorkflowState.VERIFIED: (840, ROW2),
-    WorkflowState.REVIEWED: (460, ROW2),
+    WorkflowState.REVIEWED: (650, ROW2),
 }
 
 EVENT_LABELS = {
@@ -58,13 +56,16 @@ STATE_LABELS = {
     WorkflowState.REVIEWED: "Review complete",
 }
 
+# Events of the retired approve/reject flow; they are not drawn.
+_RETIRED_EVENTS = {"VOTE_APPROVE", "VOTE_REJECT", "APPROVE", "REJECT", "RESTART"}
+
 HAPPY_PATH = [
     WorkflowState.CREATED,
     WorkflowState.IN_PROGRESS,
     WorkflowState.EVIDENCE_REQUIRED,
     WorkflowState.EVIDENCE_SUBMITTED,
     WorkflowState.VALIDATING,
-    WorkflowState.VERIFIED,
+    WorkflowState.REVIEWED,
 ]
 
 _PRIORITY = {"available": 4, "traversed": 3, "waiting": 2, "idle": 1}
@@ -78,8 +79,8 @@ def progress_percent(state_value):
         return 0
     if state == WorkflowState.REVIEWED:
         return 100          # the review is complete; this says nothing about readiness
-    if state == WorkflowState.REJECTED:
-        return round(100 * HAPPY_PATH.index(WorkflowState.VALIDATING) / (len(HAPPY_PATH) - 1))
+    if state not in HAPPY_PATH:
+        return 0
     return round(100 * HAPPY_PATH.index(state) / (len(HAPPY_PATH) - 1))
 
 
@@ -130,8 +131,7 @@ def build_fsm_view(current_state, history, available_events):
             "cy": y,
             "current": state == current,
             "visited": state.value in visited,
-            "kind": "good" if state == WorkflowState.VERIFIED
-                    else "bad" if state == WorkflowState.REJECTED else "",
+            "kind": "good" if state == WorkflowState.REVIEWED else "",
         })
 
     def status_of(from_state, event, to_state):
@@ -147,6 +147,8 @@ def build_fsm_view(current_state, history, available_events):
     edges = []
     loops = {}                       # state -> grouped self-loop
     for from_state, event, to_state in all_transitions():
+        if from_state not in _LAYOUT or to_state not in _LAYOUT or event.value in _RETIRED_EVENTS:
+            continue         # steps of the retired approve/reject flow are not part of Revora
         status = status_of(from_state, event, to_state)
         actor = REQUIRED_ACTOR[event].value.lower()
 

@@ -15,5 +15,4 @@ Setup: `python app.py` with a fresh `DATABASE_PATH`. Use three browsers/profiles
 11. A: **Revoke**. L: reload: "This link has been revoked", HTTP 410, nothing else. A: share again: new URL; the old URL still shows revoked.
 12. A: **Start a new version**, edit the commit, choose/keep reviewers, submit; R1 reports with a follow-up finding. Share version 2 only: version 1 content is absent.
 13. Integrity box reads "Integrity verified" for every request. Optional tamper demo from the README: it must turn red.
-14. Old data (staging copy of a v4 database): an old verified proof still shows its history, replays OK, and its `/proof/<token>` link still works; a revoked old link still returns 410.
 15. Narrow the window to 375 px: no horizontal scrolling on landing, request form, detail page, public page.

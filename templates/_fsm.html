@@ -1,6 +1,6 @@
 <div class="fsm-wrap">
     <svg class="fsm" viewBox="0 0 {{ fsm.width }} {{ fsm.height }}" role="img"
-        aria-label="Verification automaton. Current state: {{ state_label }}">
+        aria-label="Review automaton. Current state: {{ state_label }}">
         <defs>
             {% for name, color in (('traversed', 'var(--accent)'), ('available', 'var(--good)'), ('waiting',
             'var(--warn)'), ('idle', 'var(--border)')) %}
@@ -20,7 +20,7 @@
         {% endfor %}
         {% for node in fsm.nodes %}
         <g
-            class="node {{ node.kind }} {{ 'visited' if node.visited }} {{ 'current' if node.current }} {{ 'accepting' if node.name == 'VERIFIED' }}">
+            class="node {{ node.kind }} {{ 'visited' if node.visited }} {{ 'current' if node.current }} {{ 'accepting' if node.name == 'REVIEWED' }}">
             <title>{{ node.name }}{{ ' (current state)' if node.current }}</title>
             <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ fsm.node_w }}" height="{{ fsm.node_h }}" rx="10" />
             <text x="{{ node.cx }}" y="{{ node.cy + 4 }}">{{ node.label }}</text>

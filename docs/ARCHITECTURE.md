@@ -10,18 +10,17 @@ Flask + Jinja + SQLite, no front-end build step. One process, one database file.
 | Review services | `services/report_service.py`, `finding_service.py`, `version_service.py`, `share_service.py` | Report validation and sealing, finding lifecycle (per-finding hash chain), version snapshots, public links. |
 | Directory | `services/reviewer_profiles.py` (reviewer profiles), `services/review_service.py` (review panel), `routes/reviewers.py` | Opt-in, self-reported reviewer profiles and picker. |
 | Throttle | `services/login_throttle.py` | In-memory failed-login limiter. |
-| Routes | `routes/` | Blueprints: auth, main, projects, tasks (legacy verification), reviewers, reviews, public. Every state change is a POST behind CSRF. |
+| Routes | `routes/` | Blueprints: auth, main, projects, tasks (review events, reviewer picker, queue), reviewers, reviews, public. Every state change is a POST behind CSRF. |
 | Database | `database/` | `schema.sql` baseline, `migrations.py` (`PRAGMA user_version`, latest = 6), `backup.py`, `db.py` (`transaction()`). |
 
-## Two modes on one engine
-* **Verification mode** (original): CREATED -> IN_PROGRESS -> EVIDENCE_REQUIRED -> EVIDENCE_SUBMITTED -> VALIDATING -> VERIFIED / REJECTED.
-* **Review mode** (`review_mode` sealed in the SUBMIT_EVIDENCE meta; absent = verification): adds SUBMIT_REPORT, COMPLETE_REVIEW, NEW_VERSION and the non-terminal REVIEWED state. REVIEWED records that the review finished; it sets no result and no completion time. Replay rejects verdict events in a review-mode chain.
+## One purpose, one engine
+Revora has one workflow: CREATED -> IN_PROGRESS -> EVIDENCE_REQUIRED -> EVIDENCE_SUBMITTED -> VALIDATING -> REVIEWED (plus WITHDRAW and NEW_VERSION). REVIEWED records that the review finished; it sets no result and no completion timestamp. The first version of the project had an approve/reject verification flow. Its routes, pages and public proof links have been removed; the product no longer creates or shows it. Its transitions (VOTE_*, APPROVE, REJECT, RESTART, VERIFIED, REJECTED) are still defined in `automata/` and the engine only so that audit records written by that version replay and verify unchanged. They cannot be reached from any page. Removing them from the engine is a separate, larger change that would stop old chains from verifying.
 
 ## Authorization model
 * Every task/review lookup is by id **and** relationship: owner, assigned reviewer, or nobody. Anyone else gets 404 (existence is not revealed).
 * Roles are read from the database on every request, never from the session.
-* Reviewers cannot see other reviewers' decisions before deciding; an account can never review its own request.
-* Public pages (`/r/<token>`, `/proof/<token>`, `/u/<name>`) read only through the share-link table and select an explicit column list.
+* Reviewers cannot see other reviewers' reports before submitting their own; an account can never review its own request.
+* Public pages (`/r/<token>`) read only through the share-link table and select an explicit column list.
 
 ## Security controls
 CSRF token on every POST (`hmac.compare_digest`); hashed passwords; session cookie flags (Secure in production); `Content-Security-Policy` (`script-src 'self'`, no inline scripts), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`; `noindex` on every page except the landing page; generic error pages; login throttle (limits in README).

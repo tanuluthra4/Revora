@@ -38,9 +38,6 @@
                     class="{{ 'active' if request.endpoint == 'reviewers.directory' }}">Find reviewers</a>
                 <a href="{{ url_for('reviews.new_request') }}"
                     class="{{ 'active' if request.endpoint == 'reviews.new_request' }}">+ Request a review</a>
-                <a href="{{ url_for('tasks.add_task') }}"
-                    class="{{ 'active' if request.endpoint == 'tasks.add_task' }}">+ New task</a>
-                <a href="{{ url_for('public.profile', username=current_user['username']) }}">My public profile</a>
                 {% endif %}
             </nav>
             <div class="userbox">
